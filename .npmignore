@@ -1,0 +1,15 @@
+src
+example
+.git
+.gitignore
+.eslintrc.json
+.prettierrc.json
+.prettierignore
+tsconfig.json
+tsup.config.ts
+rollup.config.js
+.babelrc
+node_modules
+*.log
+*.md.template
+manual.md
