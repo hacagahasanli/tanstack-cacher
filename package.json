@@ -1,22 +1,32 @@
 {
-  "name": "@your-scope/react-query-cache-manager",
+  "name": "tanstack-cacher",
   "version": "1.0.0",
-  "description": "Dynamic cache manager for React Query with optimistic updates support for paginated and non-paginated data",
-  "author": "Your Name",
+  "description": "A lightweight cache management utility for TanStack Query that simplifies adding, updating, deleting, and synchronizing cached data",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/react-query-cache-manager"
+    "url": "https://github.com/hacagahasanli/tanstack-cacher"
   },
+  "author": {
+    "name": "Hasanli Hajagha",
+    "email": "hacagahasanli@gmail.com",
+    "url": "https://github.com/hacagahasanli"
+  },
+  "maintainers": [
+    {
+      "name": "Hasanli Hajagha",
+      "email": "hacagahasanli@gmail.com",
+      "web": "http://github.com/hacagahasanli"
+    }
+  ],
+  "homepage": "https://github.com/hacagahasanli/tanstack-cacher",
   "keywords": [
     "react",
     "react-query",
     "tanstack-query",
     "cache",
     "cache-manager",
-    "optimistic-updates",
-    "pagination",
-    "typescript"
+    "optimistic-updates"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

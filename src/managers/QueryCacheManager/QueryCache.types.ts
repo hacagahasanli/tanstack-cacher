@@ -1,7 +1,39 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 /**
- * Configuration options for QueryCacheManager
+ * Pagination configuration for path-based access
+ */
+export interface PaginationConfig {
+  /**
+   * Path to total elements count
+   * @example "page.totalElements" | "meta.total" | "totalCount"
+   */
+  totalElementsPath?: string;
+
+  /**
+   * Path to total pages count
+   * @example "page.totalPages" | "meta.totalPages" | "pageCount"
+   */
+  totalPagesPath?: string;
+
+  /**
+   * Path to current page number
+   * @example "page.number" | "meta.currentPage" | "page"
+   */
+  currentPagePath?: string;
+
+  /**
+   * Path to page size
+   * @example "page.size" | "meta.pageSize" | "limit"
+   */
+  pageSizePath?: string;
+}
+
+/**
+ * Configuration for QueryCacheManager with path-based access
+ *
+ * @template TData - Your full response data type
+ * @template TItem - Individual item type in the array
  */
 export interface CacheConfig<TData, TItem> {
   /**
@@ -15,22 +47,28 @@ export interface CacheConfig<TData, TItem> {
   queryKey: QueryKey;
 
   /**
-   * Function to extract the array of items from your response data
+   * Path to the items array in your response
+   * Supports dot notation for nested paths
+   *
    * @example
-   * // For simple array: data => data
-   * // For nested: data => data.result.items
-   * // For paginated: data => data.content
+   * "items" // For { items: [...] }
+   * "data.content" // For { data: { content: [...] } }
+   * "result.users" // For { result: { users: [...] } }
    */
-  getItems: (data: TData) => TItem[];
+  itemsPath: string;
 
   /**
-   * Function to update the response data with new items array
+   * Optional: Pagination configuration
+   * Provide this if your response includes pagination metadata
+   *
    * @example
-   * // For simple array: (data, items) => items
-   * // For nested: (data, items) => ({ ...data, result: { ...data.result, items } })
-   * // For paginated: (data, items) => ({ ...data, content: items })
+   * {
+   *   totalElementsPath: "page.totalElements",
+   *   totalPagesPath: "page.totalPages",
+   *   currentPagePath: "page.number"
+   * }
    */
-  setItems: (data: TData, items: TItem[]) => TData;
+  pagination?: PaginationConfig;
 
   /**
    * Function to extract a unique identifier from items
@@ -39,16 +77,13 @@ export interface CacheConfig<TData, TItem> {
   keyExtractor?: (item: TItem) => string | number;
 
   /**
-   * Optional: Update metadata after adding items (e.g., totalCount)
-   * @example (data, itemsLength) => ({ ...data, totalCount: data.totalCount + itemsLength })
+   * Optional: Initial data structure when cache is empty
+   * If not provided, will create minimal structure with empty array
+   *
+   * @example
+   * { data: { content: [] }, page: { totalElements: 0, totalPages: 0 } }
    */
-  onItemsAdd?: (data: TData, addedCount: number) => TData;
-
-  /**
-   * Optional: Update metadata after removing items (e.g., totalCount)
-   * @example (data, itemsLength) => ({ ...data, totalCount: data.totalCount - itemsLength })
-   */
-  onItemsRemove?: (data: TData, removedCount: number) => TData;
+  initialData?: TData;
 }
 
 /**

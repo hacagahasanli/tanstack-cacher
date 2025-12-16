@@ -8,7 +8,7 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
-  external: ['react', '@tanstack/react-query'],
+  external: ['react'],
   minify: false,
   target: 'es2020',
 });

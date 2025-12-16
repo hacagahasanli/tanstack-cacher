@@ -1,41 +1,61 @@
+import { getAtPath, setAtPath, incrementAtPath } from './QueryCache.utils';
+
 import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
 
 /**
- * QueryCacheManager - Flexible cache manager for React Query
+ * QueryCacheManager - Robust cache manager for React Query with path-based configuration
  *
- * Works with any response structure through user-defined getters/setters.
+ * Works with ANY response structure through path-based access.
+ * Automatically handles missing data, nested structures, and pagination metadata.
  *
  * @template TData - Your full response data type
  * @template TItem - Individual item type
  *
  * @example
  * ```typescript
- * // Simple array
+ * // Simple array at root
  * const cache = new QueryCacheManager({
  *   queryClient,
  *   queryKey: ['todos'],
- *   getItems: (data) => data,
- *   setItems: (data, items) => items,
+ *   itemsPath: '', // Empty string means data IS the array
  * });
  *
- * // Paginated
+ * // Nested array
  * const cache = new QueryCacheManager({
  *   queryClient,
  *   queryKey: ['users'],
- *   getItems: (data) => data.content,
- *   setItems: (data, items) => ({ ...data, content: items }),
- *   onItemsAdd: (data, count) => ({
- *     ...data,
- *     page: { ...data.page, totalElements: data.page.totalElements + count }
- *   }),
+ *   itemsPath: 'data.users',
+ * });
+ *
+ * // Paginated response
+ * const cache = new QueryCacheManager({
+ *   queryClient,
+ *   queryKey: ['users'],
+ *   itemsPath: 'data.content',
+ *   pagination: {
+ *     totalElementsPath: 'data.page.totalElements',
+ *     totalElementsPath: 'data.page.totalElements',
+ *     totalPagesPath: 'data.page.totalPages',
+ *     currentPagePath: 'data.page.number',k
+ *   },
+ * });
+ *
+ * // Different structure
+ * const cache = new QueryCacheManager({
+ *   queryClient,
+ *   queryKey: ['posts'],
+ *   itemsPath: 'items',
+ *   pagination: {
+ *     totalElementsPath: 'meta.total',
+ *   },
  * });
  * ```
  */
 export class QueryCacheManager<TData, TItem> {
   private config: Required<
-    Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'getItems' | 'setItems'>
+    Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'itemsPath'>
   > &
-    Pick<CacheConfig<TData, TItem>, 'keyExtractor' | 'onItemsAdd' | 'onItemsRemove'>;
+    Pick<CacheConfig<TData, TItem>, 'keyExtractor' | 'pagination' | 'initialData'>;
 
   constructor(config: CacheConfig<TData, TItem>) {
     this.config = {
@@ -45,43 +65,161 @@ export class QueryCacheManager<TData, TItem> {
   }
 
   /**
+   * Get items array from data
+   * Returns empty array if path doesn't exist or data is null
+   */
+  private getItems(data: TData | null | undefined): TItem[] {
+    if (!data) return [];
+
+    if (!this.config.itemsPath) {
+      return Array.isArray(data) ? (data as any) : [];
+    }
+
+    const items = getAtPath<TItem[]>(data, this.config.itemsPath, []);
+    return Array.isArray(items) ? items : [];
+  }
+
+  /**
+   * Set items array in data
+   * Creates nested structure if it doesn't exist
+   */
+  private setItems(data: TData | null | undefined, items: TItem[]): TData {
+    if (!data) {
+      if (this.config.initialData) {
+        data = this.config.initialData;
+      } else {
+        if (!this.config.itemsPath) {
+          return items as any;
+        }
+        data = {} as TData;
+      }
+    }
+
+    if (!this.config.itemsPath) {
+      return items as any;
+    }
+
+    return setAtPath<TData>(data, this.config.itemsPath, items);
+  }
+
+  /**
+   * Update pagination metadata after adding items
+   */
+  private updatePaginationOnAdd(data: TData, addedCount: number): TData {
+    if (!this.config.pagination) return data;
+
+    let result = data;
+
+    if (this.config.pagination.totalElementsPath) {
+      result = incrementAtPath<TData>(
+        result,
+        this.config.pagination.totalElementsPath,
+        addedCount,
+      );
+    }
+
+    if (
+      this.config.pagination.totalPagesPath &&
+      this.config.pagination.pageSizePath &&
+      this.config.pagination.totalElementsPath
+    ) {
+      const pageSize = getAtPath<number>(result, this.config.pagination.pageSizePath, 0);
+      const totalElements = getAtPath<number>(
+        result,
+        this.config.pagination.totalElementsPath,
+        0,
+      );
+
+      if (pageSize > 0) {
+        const totalPages = Math.ceil(totalElements / pageSize);
+        result = setAtPath<TData>(
+          result,
+          this.config.pagination.totalPagesPath,
+          totalPages,
+        );
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Update pagination metadata after removing items
+   */
+  private updatePaginationOnRemove(data: TData, removedCount: number): TData {
+    if (!this.config.pagination) return data;
+
+    let result = data;
+
+    if (this.config.pagination.totalElementsPath) {
+      result = incrementAtPath<TData>(
+        result,
+        this.config.pagination.totalElementsPath,
+        -removedCount,
+      );
+    }
+
+    // Recalculate total pages if both totalPagesPath and pageSizePath are provided
+    if (
+      this.config.pagination.totalPagesPath &&
+      this.config.pagination.pageSizePath &&
+      this.config.pagination.totalElementsPath
+    ) {
+      const pageSize = getAtPath<number>(result, this.config.pagination.pageSizePath, 0);
+      const totalElements = getAtPath<number>(
+        result,
+        this.config.pagination.totalElementsPath,
+        0,
+      );
+
+      if (pageSize > 0) {
+        const totalPages = Math.ceil(Math.max(0, totalElements) / pageSize);
+        result = setAtPath<TData>(
+          result,
+          this.config.pagination.totalPagesPath,
+          totalPages,
+        );
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Add item to cache
+   *
+   * @param newItem - The item to add
+   * @param position - Where to add: 'start' or 'end'
    */
   add(newItem: TItem, position: InsertPosition = 'start'): void {
     try {
       this.config.queryClient.setQueryData<TData>(this.config.queryKey, (oldData) => {
-        if (!oldData) return oldData;
-
-        const items = this.config.getItems(oldData);
-        if (!Array.isArray(items)) return oldData;
+        const items = this.getItems(oldData);
 
         const updatedItems =
           position === 'start' ? [newItem, ...items] : [...items, newItem];
 
-        let result = this.config.setItems(oldData, updatedItems);
-
-        if (this.config.onItemsAdd) {
-          result = this.config.onItemsAdd(result, 1);
-        }
+        let result = this.setItems(oldData, updatedItems);
+        result = this.updatePaginationOnAdd(result, 1);
 
         return result;
       });
     } catch (error) {
-      console.error('[QueryCacheManager] Create failed:', error);
+      console.error('[QueryCacheManager] Add failed:', error);
       this.invalidate();
     }
   }
 
   /**
    * Update existing item
+   *
+   * @param updatedItem - Partial item data to update
+   * @param matcher - Optional custom matcher function. Defaults to matching by key
    */
   update(updatedItem: Partial<TItem>, matcher?: (item: TItem) => boolean): void {
     try {
       this.config.queryClient.setQueryData<TData>(this.config.queryKey, (oldData) => {
-        if (!oldData) return oldData;
-
-        const items = this.config.getItems(oldData);
-        if (!Array.isArray(items)) return oldData;
+        const items = this.getItems(oldData);
 
         const matchFn =
           matcher ||
@@ -93,24 +231,24 @@ export class QueryCacheManager<TData, TItem> {
           matchFn(item) ? { ...item, ...updatedItem } : item,
         );
 
-        return this.config.setItems(oldData, updatedItems);
+        return this.setItems(oldData, updatedItems);
       });
     } catch (error) {
-      console.error('[QueryCacheManager] Add failed:', error);
+      console.error('[QueryCacheManager] Update failed:', error);
       this.invalidate();
     }
   }
 
   /**
    * Remove item from cache
+   *
+   * @param itemOrId - Item object or ID to remove
+   * @param matcher - Optional custom matcher function. Defaults to matching by key
    */
   delete(itemOrId: TItem | string | number, matcher?: (item: TItem) => boolean): void {
     try {
       this.config.queryClient.setQueryData<TData>(this.config.queryKey, (oldData) => {
-        if (!oldData) return oldData;
-
-        const items = this.config.getItems(oldData);
-        if (!Array.isArray(items)) return oldData;
+        const items = this.getItems(oldData);
 
         const matchFn =
           matcher ||
@@ -128,10 +266,10 @@ export class QueryCacheManager<TData, TItem> {
         const updatedItems = items.filter((item) => !matchFn(item));
         const removedCount = originalLength - updatedItems.length;
 
-        let result = this.config.setItems(oldData, updatedItems);
+        let result = this.setItems(oldData, updatedItems);
 
-        if (this.config.onItemsRemove && removedCount > 0) {
-          result = this.config.onItemsRemove(result, removedCount);
+        if (removedCount > 0) {
+          result = this.updatePaginationOnRemove(result, removedCount);
         }
 
         return result;
@@ -144,6 +282,8 @@ export class QueryCacheManager<TData, TItem> {
 
   /**
    * Replace full data
+   *
+   * @param newData - Complete new data to replace cache
    */
   replace(newData: TData): void {
     try {
@@ -155,14 +295,59 @@ export class QueryCacheManager<TData, TItem> {
   }
 
   /**
-   * Invalidate to refetch
+   * Clear all items (keeps structure, empties array)
+   */
+  clear(): void {
+    try {
+      this.config.queryClient.setQueryData<TData>(this.config.queryKey, (oldData) => {
+        let result = this.setItems(oldData, []);
+
+        // Reset pagination to 0
+        if (this.config.pagination?.totalElementsPath) {
+          result = setAtPath<TData>(result, this.config.pagination.totalElementsPath, 0);
+        }
+        if (this.config.pagination?.totalPagesPath) {
+          result = setAtPath<TData>(result, this.config.pagination.totalPagesPath, 0);
+        }
+
+        return result;
+      });
+    } catch (error) {
+      console.error('[QueryCacheManager] Clear failed:', error);
+      this.invalidate();
+    }
+  }
+
+  /**
+   * Get current items from cache
+   *
+   * @returns Current items array or empty array if no data
+   */
+  getItemsFromCache(): TItem[] {
+    const data = this.config.queryClient.getQueryData<TData>(this.config.queryKey);
+    return this.getItems(data);
+  }
+
+  /**
+   * Get full data from cache
+   *
+   * @returns Current full data or undefined if no data
+   */
+  getDataFromCache(): TData | undefined {
+    return this.config.queryClient.getQueryData<TData>(this.config.queryKey);
+  }
+
+  /**
+   * Invalidate query to trigger refetch
    */
   invalidate(): void {
     this.config.queryClient.invalidateQueries({ queryKey: this.config.queryKey });
   }
 
   /**
-   * Get handlers for mutations
+   * Get handlers for use with mutations
+   *
+   * @returns Object with onAdd, onUpdate, onDelete handlers
    */
   createHandlers(): CacheHandlers<TItem> {
     return {

@@ -1,5 +1,10 @@
 import { QueryCacheManager } from './QueryCache.manager';
 
-export type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
+export type {
+  CacheConfig,
+  CacheHandlers,
+  InsertPosition,
+  PaginationConfig,
+} from './QueryCache.types';
 
 export { QueryCacheManager };

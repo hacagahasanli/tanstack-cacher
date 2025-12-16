@@ -6,29 +6,32 @@
 
 ## Introduction
 
-A simple, TypeScript-first utility for managing React Query cache. Works with **any response structure** - simple arrays, nested data, paginated responses, or custom formats.
+A robust, TypeScript-first cache manager for React Query that works with **ANY response structure**. Using simple path-based configuration, it handles simple arrays, deeply nested data, paginated responses, and any custom format you throw at it.
 
-## Features
-
-- ✅ **Works with any API response format** - You define how to get/set items
-- ✅ **Full TypeScript support**
-- ✅ **Optimistic updates** made simple
-- ✅ **Tree-shakeable** ESM and CJS builds
-- ✅ **Tiny** - Only ~3.5KB
-- ✅ **Zero dependencies** (except peer deps)
+**Key Features:**
+- Path-based configuration (e.g., `itemsPath: "data.content"`)
+- Automatic handling of missing data and nested structures
+- Built-in pagination metadata management
+- Works with any response shape
+- Full TypeScript support with type inference
+- Zero dependencies (except React Query)
 
 ## Installation
 
-**Peer Dependencies:**
-- `@tanstack/react-query` v4 or v5
-- `react` v16.8+
+```bash
+npm install @your-scope/tanstack-cacher
+# or
+yarn add @your-scope/tanstack-cacher
+# or
+pnpm add @your-scope/tanstack-cacher
+```
 
 ## Quick Start
 
 ### 1. Simple Array Response
 
 ```typescript
-import { QueryCacheManager } from '@your-scope/react-query-cache-manager';
+import { QueryCacheManager } from '@your-scope/tanstack-cacher';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 
 interface Todo {
@@ -43,13 +46,12 @@ function TodoList() {
   const cache = new QueryCacheManager<Todo[], Todo>({
     queryClient,
     queryKey: ['todos'],
-    getItems: (data) => data,              // data is already array
-    setItems: (data, items) => items,      // just return the items
+    itemsPath: '', // Empty string = data IS the array
   });
 
   const createMutation = useMutation({
     mutationFn: createTodo,
-    onMutate: (newTodo) => cache.create(newTodo),
+    onMutate: (newTodo) => cache.add(newTodo),
     onError: () => cache.invalidate(),
   });
 
@@ -80,15 +82,11 @@ interface ApiResponse {
 const cache = new QueryCacheManager<ApiResponse, User>({
   queryClient,
   queryKey: ['users'],
-  getItems: (data) => data.data.items,
-  setItems: (data, items) => ({
-    ...data,
-    data: { ...data.data, items }
-  }),
+  itemsPath: 'data.items', // Path to the array
 });
 ```
 
-### 3. Paginated Response
+### 3. Paginated Response (Automatic Metadata Updates!)
 
 ```typescript
 interface PaginatedResponse {
@@ -104,55 +102,67 @@ interface PaginatedResponse {
 const cache = new QueryCacheManager<PaginatedResponse, User>({
   queryClient,
   queryKey: ['users', { page: 0 }],
-  getItems: (data) => data.content,
-  setItems: (data, items) => ({ ...data, content: items }),
-  // Update totalElements when adding items
-  onItemsAdd: (data, count) => ({
-    ...data,
-    page: {
-      ...data.page,
-      totalElements: data.page.totalElements + count,
-      totalPages: Math.ceil((data.page.totalElements + count) / data.page.size)
-    }
-  }),
-  // Update totalElements when removing items
-  onItemsRemove: (data, count) => ({
-    ...data,
-    page: {
-      ...data.page,
-      totalElements: Math.max(0, data.page.totalElements - count),
-      totalPages: Math.ceil(Math.max(0, data.page.totalElements - count) / data.page.size)
-    }
-  }),
+  itemsPath: 'content', // Path to items
+  pagination: {
+    totalElementsPath: 'page.totalElements', // Auto-updates on add/delete
+    totalPagesPath: 'page.totalPages', // Auto-recalculated on add/delete
+    currentPagePath: 'page.number',
+    pageSizePath: 'page.size', // Required for totalPages calculation
+  },
+});
+
+// Now when you add/delete, totalElements AND totalPages update automatically!
+cache.add(newUser); // totalElements++, totalPages recalculated
+cache.delete(userId); // totalElements--, totalPages recalculated
+```
+
+### 4. Different Pagination Format
+
+```typescript
+interface Response {
+  items: Product[];
+  meta: {
+    total: number;
+    currentPage: number;
+    totalPages: number;
+  };
+}
+
+const cache = new QueryCacheManager<Response, Product>({
+  queryClient,
+  queryKey: ['products'],
+  itemsPath: 'items',
+  pagination: {
+    totalElementsPath: 'meta.total',
+    totalPagesPath: 'meta.totalPages',
+    currentPagePath: 'meta.currentPage',
+    pageSizePath: 'meta.pageSize', // For auto totalPages calculation
+  },
 });
 ```
 
-### 4. Custom Response Format
+### 5. Deeply Nested Response
 
 ```typescript
-// Your unique API format
-interface CustomResponse {
+interface ComplexResponse {
   status: 'ok';
   result: {
-    list: Product[];
-    meta: {
+    data: {
+      users: User[];
+    };
+    metadata: {
       count: number;
     };
   };
 }
 
-const cache = new QueryCacheManager<CustomResponse, Product>({
+const cache = new QueryCacheManager<ComplexResponse, User>({
   queryClient,
-  queryKey: ['products'],
-  getItems: (data) => data.result.list,
-  setItems: (data, items) => ({
-    ...data,
-    result: {
-      ...data.result,
-      list: items,
-      meta: { ...data.result.meta, count: items.length }
-    }
-  }),
+  queryKey: ['users'],
+  itemsPath: 'result.data.users', // Navigate with dots
+  pagination: {
+    totalElementsPath: 'result.metadata.count',
+  },
 });
 ```
 
@@ -170,19 +180,27 @@ new QueryCacheManager<TData, TItem>(config)
 |--------|------|----------|-------------|
 | `queryClient` | `QueryClient` | Yes | React Query client instance |
 | `queryKey` | `QueryKey` | Yes | Query key for the cache |
-| `getItems` | `(data: TData) => TItem[]` | Yes | Extract items array from your response |
-| `setItems` | `(data: TData, items: TItem[]) => TData` | Yes | Update response with new items array |
+| `itemsPath` | `string` | Yes | Dot-separated path to items array (empty string if data IS array) |
+| `pagination` | `PaginationConfig` | No | Pagination metadata paths |
 | `keyExtractor` | `(item: TItem) => string \| number` | No | Extract unique ID (default: `item.id`) |
-| `onItemsAdd` | `(data: TData, count: number) => TData` | No | Update metadata after adding items |
-| `onItemsRemove` | `(data: TData, count: number) => TData` | No | Update metadata after removing items |
+| `initialData` | `TData` | No | Initial structure when cache is empty |
+
+**PaginationConfig:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `totalElementsPath` | `string` | Path to total count (auto-updated on add/delete) |
+| `totalPagesPath` | `string` | Path to total pages (auto-recalculated when pageSizePath provided) |
+| `currentPagePath` | `string` | Path to current page number |
+| `pageSizePath` | `string` | Path to page size (required for automatic totalPages recalculation) |
 
 ### Methods
 
-#### `create(newItem, position?)`
+#### `add(newItem, position?)`
 Add new item to cache
 ```typescript
-cache.create({ id: '1', name: 'John' });
-cache.create({ id: '2', name: 'Jane' }, 'end');
+cache.add({ id: '1', name: 'John' }); // Adds at start (default)
+cache.add({ id: '2', name: 'Jane' }, 'end'); // Adds at end
 ```
 
 #### `update(updatedItem, matcher?)`
@@ -217,6 +235,24 @@ Replace entire cache data
 cache.replace(newFullData);
 ```
 
+#### `clear()`
+Clear all items (resets array to empty, updates pagination to 0)
+```typescript
+cache.clear();
+```
+
+#### `getItemsFromCache()`
+Get current items array
+```typescript
+const items = cache.getItemsFromCache(); // returns TItem[]
+```
+
+#### `getDataFromCache()`
+Get full cache data
+```typescript
+const fullData = cache.getDataFromCache(); // returns TData | undefined
+```
+
 #### `invalidate()`
 Trigger refetch from server
 ```typescript
@@ -230,40 +266,16 @@ const handlers = cache.createHandlers();
 
 useMutation({
   mutationFn: createUser,
-  onMutate: handlers.onCreate,
+  onMutate: handlers.onAdd,
   onError: () => cache.invalidate(),
 });
-```
-
-## Next.js Usage
-
-Works seamlessly with Next.js App Router:
-
-```typescript
-// app/users/page.tsx
-'use client';
-
-import { QueryCacheManager } from '@your-scope/react-query-cache-manager';
-
-export default function UsersPage() {
-  const queryClient = useQueryClient();
-
-  const cache = new QueryCacheManager({
-    queryClient,
-    queryKey: ['users'],
-    getItems: (data) => data,
-    setItems: (data, items) => items,
-  });
-
-  // ... rest of component
-}
 ```
 
 ## Real-World Example
 
 ```typescript
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { QueryCacheManager } from '@your-scope/react-query-cache-manager';
+import { QueryCacheManager } from '@your-scope/tanstack-cacher';
 
 interface Todo {
   id: string;
@@ -278,8 +290,7 @@ function TodoApp() {
   const todoCache = new QueryCacheManager<Todo[], Todo>({
     queryClient,
     queryKey: ['todos'],
-    getItems: (data) => data,
-    setItems: (_, items) => items,
+    itemsPath: '', // Data IS the array
   });
 
   // Fetch todos
@@ -299,7 +310,7 @@ function TodoApp() {
     },
     onMutate: (title) => {
       // Optimistically add with temp ID
-      todoCache.create({
+      todoCache.add({
         id: `temp-${Date.now()}`,
         title,
         completed: false,
@@ -363,21 +374,140 @@ function TodoApp() {
 }
 ```
 
+## Next.js Usage
+
+Works seamlessly with Next.js App Router:
+
+```typescript
+// app/users/page.tsx
+'use client';
+
+import { QueryCacheManager } from '@your-scope/tanstack-cacher';
+
+export default function UsersPage() {
+  const queryClient = useQueryClient();
+
+  const cache = new QueryCacheManager({
+    queryClient,
+    queryKey: ['users'],
+    itemsPath: 'data.users',
+  });
+
+  // ... rest of component
+}
+```
+
+## Advanced Examples
+
+### Handling Missing Data
+
+The manager automatically creates the structure if data is missing:
+
+```typescript
+const cache = new QueryCacheManager<ApiResponse, User>({
+  queryClient,
+  queryKey: ['users'],
+  itemsPath: 'data.content',
+  // If cache is empty, this structure is created:
+  initialData: {
+    data: {
+      content: [],
+    },
+    page: {
+      totalElements: 0,
+      totalPages: 0,
+    },
+  },
+});
+
+// Even if cache is empty, this works fine!
+cache.add(newUser); // Creates structure + adds item
+```
+
+### Custom Key Extractor
+
+```typescript
+interface User {
+  userId: string; // Not "id"
+  name: string;
+}
+
+const cache = new QueryCacheManager<User[], User>({
+  queryClient,
+  queryKey: ['users'],
+  itemsPath: '',
+  keyExtractor: (user) => user.userId, // Custom ID field
+});
+```
+
+### Multiple Cache Managers
+
+```typescript
+function App() {
+  const queryClient = useQueryClient();
+
+  // One manager per query
+  const usersCache = new QueryCacheManager({
+    queryClient,
+    queryKey: ['users'],
+    itemsPath: 'data.users',
+  });
+
+  const postsCache = new QueryCacheManager({
+    queryClient,
+    queryKey: ['posts'],
+    itemsPath: 'posts',
+  });
+
+  // Use independently
+  usersCache.add(newUser);
+  postsCache.add(newPost);
+}
+```
+
 ## Best Practices
 
-1. **Always handle errors** - Call `invalidate()` on mutation errors
-2. **Use temporary IDs** - For creates, use `temp-${Date.now()}` or similar
+1. **Always handle errors** - Call `invalidate()` on mutation errors to refetch from server
+2. **Use temporary IDs** - For optimistic creates, use `temp-${Date.now()}` or similar
 3. **One manager per query** - Create separate instances for different queries
-4. **Type everything** - Provide TypeScript types for full type safety
+4. **Specify paths clearly** - Use dot notation for nested paths: `"data.result.items"`
+5. **Type everything** - Provide TypeScript types for full type safety
 
 ## Why This Package?
 
-Other cache management solutions are often rigid and assume specific response formats. This package:
+Traditional cache managers assume your API structure. This package:
 
-- Works with **any** API response structure
-- Lets **you** define how to access your data
-- Stays simple and focused
-- Doesn't make assumptions about your backend
+- **Works with ANY structure** - Just tell it the path to your data
+- **Handles edge cases** - Missing data, nested objects, pagination metadata
+- **Zero configuration overhead** - No complex setup or boilerplate
+- **Type-safe** - Full TypeScript support with inference
+- **Framework agnostic** - Works anywhere React Query works
+
+## Migration from Old API
+
+If you were using the old `getItems`/`setItems` approach:
+
+```typescript
+// Old way ❌
+const cache = new QueryCacheManager({
+  getItems: (data) => data.content,
+  setItems: (data, items) => ({ ...data, content: items }),
+  onItemsAdd: (data, count) => ({
+    ...data,
+    page: { ...data.page, totalElements: data.page.totalElements + count }
+  }),
+});
+
+// New way ✅
+const cache = new QueryCacheManager({
+  itemsPath: 'content',
+  pagination: {
+    totalElementsPath: 'page.totalElements',
+  },
+});
+```
+
+Much simpler and safer!
 
 ## License
 
