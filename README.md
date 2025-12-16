@@ -21,8 +21,7 @@ A robust, TypeScript-first cache manager for React Query that works with **ANY r
 ### 1. Simple Array Response
 
 ```typescript
-import { QueryCacheManager } from 'tanstack-cacher';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { QueryCacheManager, useQueryClient, useMutation } from 'tanstack-cacher';
 
 interface Todo {
   id: string;
@@ -264,8 +263,7 @@ useMutation({
 ## Real-World Example
 
 ```typescript
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { QueryCacheManager } from 'tanstack-cacher';
+import { QueryCacheManager,  useMutation, useQuery, useQueryClient  } from 'tanstack-cacher';
 
 interface Todo {
   id: string;
@@ -375,7 +373,7 @@ Works seamlessly with Next.js App Router:
 import { QueryCacheManager } from 'tanstack-cacher';
 
 export default function UsersPage() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient(); // would be great if you will import queryClient directly where you create the instance
 
   const cache = new QueryCacheManager({
     queryClient,
