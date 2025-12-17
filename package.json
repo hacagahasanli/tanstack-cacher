@@ -1,6 +1,6 @@
 {
   "name": "tanstack-cacher",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A lightweight cache management utility for TanStack Query that simplifies adding, updating, deleting, and synchronizing cached data",
   "license": "MIT",
   "repository": {
@@ -19,7 +19,7 @@
       "web": "http://github.com/hacagahasanli"
     }
   ],
-  "homepage": "https://github.com/hacagahasanli/tanstack-cacher",
+  "homepage": "https://github.com/hacagahasanli/tanstack-cacher#readme",
   "keywords": [
     "react",
     "react-query",
