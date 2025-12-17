@@ -6,8 +6,8 @@ import { useNotificationContext } from '../hooks/useNotificationContext';
 export type { CustomQueryOptions, CustomMutationOptions } from './types';
 
 export {
-  useCustomMutation,
   useCustomQuery,
+  useCustomMutation,
   useQueryCacheManagers,
   useNotificationContext,
 };

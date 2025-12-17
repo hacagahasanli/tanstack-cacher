@@ -4,17 +4,16 @@ import type {
   UseQueryOptions,
 } from '@tanstack/react-query';
 
-import { CacheConfig } from '../managers';
+import type { CacheOptions } from '../types/cache';
 
-export type CustomQueryOptions<
+export type CustomQueryOptions<TData, TError = unknown> = UseQueryOptions<
   TData,
-  TError = unknown,
-  // eslint-disable-next-line
-  TItem extends { id?: string | number } = any,
-> = UseQueryOptions<TData, TError> & {
+  TError
+> & {
   queryKey: QueryKey;
+  cacheType?: string;
   queryFn: () => Promise<TData>;
-  cacheConfig?: Omit<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey'>;
+  cacheConfig?: CacheOptions;
 };
 
 export type CustomMutationOptions<TData, TError, TVariables, TContext> =
