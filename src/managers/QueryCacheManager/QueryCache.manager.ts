@@ -345,6 +345,20 @@ export class QueryCacheManager<TData, TItem> {
   }
 
   /**
+   * Refetch query immediately
+   */
+  refetch(): void {
+    try {
+      this.config.queryClient.refetchQueries({
+        queryKey: this.config.queryKey,
+        exact: true,
+      });
+    } catch (error) {
+      console.error('[QueryCacheManager] Refetch failed:', error);
+    }
+  }
+
+  /**
    * Get handlers for use with mutations
    *
    * @returns Object with onAdd, onUpdate, onDelete handlers
