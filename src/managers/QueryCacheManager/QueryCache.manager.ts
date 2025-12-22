@@ -349,7 +349,7 @@ export class QueryCacheManager<TData, TItem> {
    */
   refetch(key?: string): void {
     try {
-      const queryKey = key ? (Array.isArray(key) ? key : [key]) : this.config.queryKey;
+      const queryKey = key ? [key] : this.config.queryKey;
       this.config.queryClient.refetchQueries({
         queryKey,
         exact: true,
