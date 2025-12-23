@@ -60,13 +60,13 @@ export const useCustomMutation = <TData, TError, TVariables = void, TContext = u
 
   const queryClient = useQueryClient();
 
-  const { showSuccess, showError } = useNotificationContext();
+  const contextVal = useNotificationContext();
 
   return useMutation<TData, TError, TVariables, TContext>({
     ...rest,
     onSuccess: (data, variables, onMutateResult, context) => {
       if (notify || notifySuccess) {
-        showSuccess(successMessage, notificationConfig);
+        contextVal?.showSuccess?.(successMessage, notificationConfig);
       }
 
       onSuccess?.(data, variables, onMutateResult, context);
@@ -84,7 +84,7 @@ export const useCustomMutation = <TData, TError, TVariables = void, TContext = u
         : ((apiError as any)?.error?.message ?? errorMessage);
 
       if (notify || notifyError) {
-        showError(message, notificationConfig);
+        contextVal?.showError(message, notificationConfig);
       }
 
       onError?.(apiError, variables, onMutateResult, context);
