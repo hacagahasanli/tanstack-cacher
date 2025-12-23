@@ -2,6 +2,9 @@
  * Path-based utilities for accessing and modifying nested objects
  */
 
+import { type MutationTypes } from '../../hooks/types';
+import { type QueryCacheManager } from './QueryCache.manager';
+
 /**
  * Get value at path in object
  * Supports dot notation: "data.items", "page.totalElements"
@@ -18,7 +21,7 @@ export function getAtPath<T = any>(obj: any, path: string, defaultValue?: T): T 
   let result = obj;
 
   for (const key of keys) {
-    if (result === null || result === undefined) {
+    if (result === null) {
       return defaultValue as T;
     }
     result = result[key];
@@ -98,3 +101,26 @@ export function hasPath(obj: any, path: string): boolean {
 
   return true;
 }
+
+export const runCacheManagers = <TData>(
+  type: MutationTypes,
+  manager: QueryCacheManager<unknown, unknown>,
+  data: Partial<TData>,
+) => {
+  switch (type) {
+    case 'invalidate':
+      manager.invalidate();
+      break;
+    case 'remove':
+      manager.delete(data);
+      break;
+    case 'add':
+      manager.add(data);
+      break;
+    case 'update':
+      manager.update(data);
+      break;
+    default:
+      break;
+  }
+};

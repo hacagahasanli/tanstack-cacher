@@ -1,13 +1,7 @@
-import { useCustomQuery } from './useCustomQuery';
 import { useCustomMutation } from './useCustomMutation';
 import { useQueryCacheManagers } from './useQueryCacheManagers';
-import { useNotificationContext } from '../hooks/useNotificationContext';
+import { useNotificationContext } from './useNotificationContext';
 
-export type { CustomQueryOptions, CustomMutationOptions } from './types';
+export type { CustomMutationOptions } from './types';
 
-export {
-  useCustomQuery,
-  useCustomMutation,
-  useQueryCacheManagers,
-  useNotificationContext,
-};
+export { useCustomMutation, useQueryCacheManagers, useNotificationContext };

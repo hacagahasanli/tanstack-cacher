@@ -5,3 +5,8 @@ export {
   type InsertPosition,
   type PaginationConfig,
 } from './QueryCacheManager';
+
+export {
+  cacheManagerFactory,
+  type CacheManagerConstructor,
+} from './QueryCacheManager/CacheManagerFactory';

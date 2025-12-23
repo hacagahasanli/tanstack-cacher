@@ -1,4 +1,2 @@
-import { NotificationContext } from './NotificationContext';
-
-export { NotificationContext };
+export { NotificationContext } from './NotificationContext';
 export type { NotificationContextType } from './Context.types';

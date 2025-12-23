@@ -1,31 +1,30 @@
-import type {
-  QueryKey,
-  UseMutationOptions,
-  UseQueryOptions,
-} from '@tanstack/react-query';
+import type { UseMutationOptions } from '@tanstack/react-query';
 
-import type { CacheOptions } from '../types/cache';
+import { type CacheConfig } from '../managers';
 
-export type CustomQueryOptions<TData, TError = unknown> = UseQueryOptions<
+export type MutationTypes = 'add' | 'invalidate' | 'remove' | 'update';
+
+export interface CacheActions<TData, TItem = unknown> extends Omit<
+  CacheConfig<TData, TItem>,
+  'queryClient'
+> {
+  type: MutationTypes;
+}
+
+export type CustomMutationOptions<TData, TError, TVariables> = UseMutationOptions<
   TData,
-  TError
+  TError,
+  TVariables
 > & {
-  queryKey: QueryKey;
-  cacheType?: string;
-  queryFn: () => Promise<TData>;
-  cacheConfig?: CacheOptions;
+  notify?: boolean;
+  notifyError?: boolean;
+  errorMessage?: string;
+  notifySuccess?: boolean;
+  successMessage?: string;
+  cacheActions?: CacheActions<TData>[] | CacheActions<TData>;
+  notificationConfig?: NotificationOptions;
+  getErrorMessage?: (error: TError) => string;
 };
-
-export type CustomMutationOptions<TData, TError, TVariables, TContext> =
-  UseMutationOptions<TData, TError, TVariables, TContext> & {
-    notify?: boolean;
-    notifyError?: boolean;
-    errorMessage?: string;
-    notifySuccess?: boolean;
-    successMessage?: string;
-    notificationConfig?: NotificationOptions;
-    getErrorMessage?: (error: TError) => string;
-  };
 
 export interface NotificationOptions {
   duration?: number;

@@ -39,7 +39,7 @@ export interface CacheConfig<TData, TItem> {
   /**
    * React Query client instance
    */
-  queryClient: QueryClient;
+  queryClient?: QueryClient;
 
   /**
    * Query key that identifies the cached data
@@ -55,7 +55,7 @@ export interface CacheConfig<TData, TItem> {
    * "data.content" // For { data: { content: [...] } }
    * "result.users" // For { result: { users: [...] } }
    */
-  itemsPath: string;
+  itemsPath?: string;
 
   /**
    * Optional: Pagination configuration
@@ -70,6 +70,7 @@ export interface CacheConfig<TData, TItem> {
    */
   pagination?: PaginationConfig;
 
+  isPaginated?: boolean;
   /**
    * Function to extract a unique identifier from items
    * @default (item) => item.id

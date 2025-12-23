@@ -1,66 +1,41 @@
 import { getAtPath, setAtPath, incrementAtPath } from './QueryCache.utils';
 
+import { QueryClient } from '@tanstack/react-query';
+import { DEFAULT_PAGINATION_PATHS } from './QueryCache.consts';
+
 import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
 
-/**
- * QueryCacheManager - Robust cache manager for React Query with path-based configuration
- *
- * Works with ANY response structure through path-based access.
- * Automatically handles missing data, nested structures, and pagination metadata.
- *
- * @template TData - Your full response data type
- * @template TItem - Individual item type
- *
- * @example
- * ```typescript
- * // Simple array at root
- * const cache = new QueryCacheManager({
- *   queryClient,
- *   queryKey: ['todos'],
- *   itemsPath: '', // Empty string means data IS the array
- * });
- *
- * // Nested array
- * const cache = new QueryCacheManager({
- *   queryClient,
- *   queryKey: ['users'],
- *   itemsPath: 'data.users',
- * });
- *
- * // Paginated response
- * const cache = new QueryCacheManager({
- *   queryClient,
- *   queryKey: ['users'],
- *   itemsPath: 'data.content',
- *   pagination: {
- *     totalElementsPath: 'data.page.totalElements',
- *     totalPagesPath: 'data.page.totalPages',
- *     currentPagePath: 'data.page.number',
- *   },
- * });
- *
- * // Different structure
- * const cache = new QueryCacheManager({
- *   queryClient,
- *   queryKey: ['posts'],
- *   itemsPath: 'items',
- *   pagination: {
- *     totalElementsPath: 'meta.total',
- *   },
- * });
- * ```
- */
+const defaultQueryClient = new QueryClient();
 
 export class QueryCacheManager<TData, TItem> {
   private config: Required<
     Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'itemsPath'>
   > &
-    Pick<CacheConfig<TData, TItem>, 'keyExtractor' | 'pagination' | 'initialData'>;
+    Pick<
+      CacheConfig<TData, TItem>,
+      'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated'
+    >;
 
   constructor(config: CacheConfig<TData, TItem>) {
+    const isPaginated = Boolean(config.pagination);
+
     this.config = {
       ...config,
+
+      itemsPath: config.itemsPath ?? 'data.content',
+
+      queryClient: config.queryClient ?? defaultQueryClient,
+
+      isPaginated,
+
       keyExtractor: config.keyExtractor || ((item: any) => item.id),
+
+      pagination: isPaginated
+        ? {
+            ...DEFAULT_PAGINATION_PATHS,
+            ...config.pagination,
+          }
+        : undefined,
     };
   }
 

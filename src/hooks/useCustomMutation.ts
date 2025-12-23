@@ -1,7 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { CustomMutationOptions } from './types';
+import { cacheManagerFactory } from '../managers';
+import { runCacheManagers } from '../managers/QueryCacheManager/QueryCache.utils';
+
 import { useNotificationContext } from './useNotificationContext';
+
+import type { CustomMutationOptions } from './types';
 
 /**
  * useCustomMutation - A type-safe wrapper around React Query's `useMutation`.
@@ -24,7 +28,7 @@ import { useNotificationContext } from './useNotificationContext';
  *   mutationFn: (variables) => api.updateUser(variables.id),
  *   notify: true,
  *   successMessage: 'User updated successfully!',
- *   onSuccess: (data, variables, context, mutation) => {
+ *   onSuccess: (data, variables, context) => {
  *     console.log('Mutation succeeded', data);
  *   },
  *   onError: (error, variables, context) => {
@@ -37,12 +41,13 @@ import { useNotificationContext } from './useNotificationContext';
  * ```
  */
 
-export const useCustomMutation = <TData, TError, TVariables = void, TContext = unknown>(
-  options: CustomMutationOptions<TData, TError, TVariables, TContext>,
+export const useCustomMutation = <TData, TError, TVariables = void>(
+  options: CustomMutationOptions<TData, TError, TVariables>,
 ) => {
   const {
     onError,
     onSuccess,
+    cacheActions,
     notify = false,
     notifyError = false,
     notifySuccess = false,
@@ -52,27 +57,40 @@ export const useCustomMutation = <TData, TError, TVariables = void, TContext = u
     getErrorMessage,
     ...rest
   } = options;
-  const { showSuccess, showError } = useNotificationContext();
 
-  return useMutation<TData, TError, TVariables, TContext>({
+  const notificationContext = useNotificationContext();
+
+  return useMutation<TData, TError, TVariables>({
     ...rest,
-    onSuccess: (data, variables, context, mutation) => {
+    onSuccess: (data, variables, mResult, context) => {
       if (notify || notifySuccess) {
-        showSuccess(successMessage, notificationConfig);
+        notificationContext?.showSuccess?.(successMessage, notificationConfig);
       }
 
-      onSuccess?.(data, variables, context, mutation);
+      onSuccess?.(data, variables, mResult, context);
+
+      if (Array.isArray(cacheActions)) {
+        cacheActions.forEach((item) => {
+          const { type, ...rest } = item;
+          const manager = cacheManagerFactory.create(rest);
+          runCacheManagers<TData>(type, manager, data);
+        });
+      } else if (cacheActions) {
+        const { type, ...rest } = cacheActions;
+        const manager = cacheManagerFactory.create(rest);
+        runCacheManagers<TData>(type, manager, data);
+      }
     },
-    onError: (apiError, variables, context, mutation) => {
+    onError: (apiError, variables, mResult, context) => {
       const message = getErrorMessage
         ? getErrorMessage(apiError)
         : ((apiError as any)?.error?.message ?? errorMessage);
 
       if (notify || notifyError) {
-        showError(message, notificationConfig);
+        notificationContext?.showError(message, notificationConfig);
       }
 
-      onError?.(apiError, variables, context, mutation);
+      onError?.(apiError, variables, mResult, context);
     },
   });
 };
