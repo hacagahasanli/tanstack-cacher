@@ -69,11 +69,16 @@ export const useCustomMutation = <TData, TError, TVariables = void>(
 
       onSuccess?.(data, variables, mResult, context);
 
-      if (cacheActions?.length) {
-        cacheActions.forEach(({ type, config }) => {
-          const manager = cacheManagerFactory.create({ ...config });
+      if (Array.isArray(cacheActions)) {
+        cacheActions.forEach((item) => {
+          const { type, ...rest } = item;
+          const manager = cacheManagerFactory.create(rest);
           runCacheManagers<TData>(type, manager, data);
         });
+      } else if (cacheActions) {
+        const { type, ...rest } = cacheActions;
+        const manager = cacheManagerFactory.create(rest);
+        runCacheManagers<TData>(type, manager, data);
       }
     },
     onError: (apiError, variables, mResult, context) => {

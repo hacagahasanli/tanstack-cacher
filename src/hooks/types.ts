@@ -4,9 +4,11 @@ import { type CacheConfig } from '../managers';
 
 export type MutationTypes = 'add' | 'invalidate' | 'remove' | 'update';
 
-export interface CacheActions<TData, TItem = unknown> {
+export interface CacheActions<TData, TItem = unknown> extends Omit<
+  CacheConfig<TData, TItem>,
+  'queryClient'
+> {
   type: MutationTypes;
-  config: Omit<CacheConfig<TData, TItem>, 'queryClient'>;
 }
 
 export type CustomMutationOptions<TData, TError, TVariables> = UseMutationOptions<
@@ -19,7 +21,7 @@ export type CustomMutationOptions<TData, TError, TVariables> = UseMutationOption
   errorMessage?: string;
   notifySuccess?: boolean;
   successMessage?: string;
-  cacheActions?: CacheActions<TData>[];
+  cacheActions?: CacheActions<TData>[] | CacheActions<TData>;
   notificationConfig?: NotificationOptions;
   getErrorMessage?: (error: TError) => string;
 };

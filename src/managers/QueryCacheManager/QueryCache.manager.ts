@@ -1,8 +1,9 @@
 import { getAtPath, setAtPath, incrementAtPath } from './QueryCache.utils';
 
-import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
 import { QueryClient } from '@tanstack/react-query';
 import { DEFAULT_PAGINATION_PATHS } from './QueryCache.consts';
+
+import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
 
 const defaultQueryClient = new QueryClient();
 

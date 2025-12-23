@@ -13,6 +13,8 @@ export class MyCustomManager<TData, TItem> extends QueryCacheManager<TData, TIte
   // These override methods are optional (you can just simply extend the class)
   override add(newItem: TItem, position: InsertPosition = 'start'): void {
     super.add(newItem, position);
+    Logger.error(adda)
+    amplitude.post()
   }
 
   override update(updatedItem: Partial<TItem>): void {
@@ -40,13 +42,10 @@ cacheManagerFactory.setManagerClass(MyCustomManager);
 ```typescript
 const mutation = useCustomMutation({
   mutationFn: createUser,
-  cacheActions: [{
+  cacheActions: {
     type: 'add',
-    config: {
-      queryKey: ['users'],
-      itemsPath: 'data.users',
-    }
-  }]
+    queryKey: ['users'],
+  }
 });
 ```
 
