@@ -32,9 +32,9 @@ export class QueryCacheManager<TData, TItem> {
 
       pagination: isPaginated
         ? {
-            ...DEFAULT_PAGINATION_PATHS,
-            ...config.pagination,
-          }
+          ...DEFAULT_PAGINATION_PATHS,
+          ...config.pagination,
+        }
         : undefined,
     };
   }
@@ -224,7 +224,7 @@ export class QueryCacheManager<TData, TItem> {
   /**
    * Remove item from cache
    *
-   * @param itemOrId - Item object or ID to remove
+   * @param itemOrId - Item object or ID to removex
    * @param matcher - Optional custom matcher function. Defaults to matching by key
    */
   delete(itemOrId: TItem | string | number, matcher?: (item: TItem) => boolean): void {
@@ -354,6 +354,22 @@ export class QueryCacheManager<TData, TItem> {
     } catch (error) {
       console.error('[QueryCacheManager] Refetch failed:', error);
     }
+  }
+
+  /**
+   * Check if query exists in cache
+   */
+  hasQuery(key?: string): boolean {
+    const queryKey = key ?? this.config.queryKey;
+    return !!this.config.queryClient.getQueryCache().find({ queryKey: [queryKey] });
+  }
+
+  /**
+   * Remove query from cache
+   */
+  removeQuery(key?: string): void {
+    const queryKey = key ?? this.config.queryKey;
+    this.config.queryClient.removeQueries({ queryKey: [queryKey] });
   }
 
   /**
