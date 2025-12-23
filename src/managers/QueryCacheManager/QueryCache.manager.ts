@@ -1,6 +1,8 @@
 import { getAtPath, setAtPath, incrementAtPath } from './QueryCache.utils';
 
 import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
+import { QueryClient } from '@tanstack/react-query';
+import { DEFAULT_PAGINATION_PATHS } from './QueryCache.consts';
 
 /**
  * QueryCacheManager - Robust cache manager for React Query with path-based configuration
@@ -51,16 +53,37 @@ import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.ty
  * ```
  */
 
+const defaultQueryClient = new QueryClient();
+
 export class QueryCacheManager<TData, TItem> {
   private config: Required<
     Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'itemsPath'>
   > &
-    Pick<CacheConfig<TData, TItem>, 'keyExtractor' | 'pagination' | 'initialData'>;
+    Pick<
+      CacheConfig<TData, TItem>,
+      'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated'
+    >;
 
   constructor(config: CacheConfig<TData, TItem>) {
+    const isPaginated = Boolean(config.pagination);
+
     this.config = {
       ...config,
+
+      itemsPath: config.itemsPath ?? 'data.content',
+
+      queryClient: config.queryClient ?? defaultQueryClient,
+
+      isPaginated,
+
       keyExtractor: config.keyExtractor || ((item: any) => item.id),
+
+      pagination: isPaginated
+        ? {
+            ...DEFAULT_PAGINATION_PATHS,
+            ...config.pagination,
+          }
+        : undefined,
     };
   }
 

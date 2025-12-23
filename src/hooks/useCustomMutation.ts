@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 
 import { QueryCacheManager } from '../managers';
 import { runCacheManagers } from '../managers/QueryCacheManager/QueryCache.utils';
@@ -58,22 +58,20 @@ export const useCustomMutation = <TData, TError, TVariables = void, TContext = u
     ...rest
   } = options;
 
-  const queryClient = useQueryClient();
-
-  const contextVal = useNotificationContext();
+  const notificationContext = useNotificationContext();
 
   return useMutation<TData, TError, TVariables, TContext>({
     ...rest,
     onSuccess: (data, variables, onMutateResult, context) => {
       if (notify || notifySuccess) {
-        contextVal?.showSuccess?.(successMessage, notificationConfig);
+        notificationContext?.showSuccess?.(successMessage, notificationConfig);
       }
 
       onSuccess?.(data, variables, onMutateResult, context);
 
       if (cacheActions?.length) {
         cacheActions.forEach(({ type, config }: CacheActions<TData>) => {
-          const manager = new QueryCacheManager({ ...config, queryClient });
+          const manager = new QueryCacheManager({ ...config });
           runCacheManagers<TData>(type, manager, data);
         });
       }
@@ -84,7 +82,7 @@ export const useCustomMutation = <TData, TError, TVariables = void, TContext = u
         : ((apiError as any)?.error?.message ?? errorMessage);
 
       if (notify || notifyError) {
-        contextVal?.showError(message, notificationConfig);
+        notificationContext?.showError(message, notificationConfig);
       }
 
       onError?.(apiError, variables, onMutateResult, context);

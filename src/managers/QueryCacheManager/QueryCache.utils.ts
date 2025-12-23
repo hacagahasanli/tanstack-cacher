@@ -21,15 +21,15 @@ export function getAtPath<T = any>(obj: any, path: string, defaultValue?: T): T 
   let result = obj;
 
   for (const key of keys) {
-    if (result === null || result === undefined) {
+    if (result === null) {
       return defaultValue as T;
     }
-
     result = result[key];
   }
 
   return result !== undefined ? result : (defaultValue as T);
 }
+
 /**
  * Set value at path in object (immutably)
  * Creates nested objects if they don't exist
