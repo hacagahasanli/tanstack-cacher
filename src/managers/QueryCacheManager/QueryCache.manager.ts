@@ -214,6 +214,13 @@ export class QueryCacheManager<TData, TItem> {
     }
   }
 
+  updateWithCustomLogic(updater: (oldData: any) => any): void {
+    this.config.queryClient.setQueryData(this.config.queryKey, (oldData: any) => {
+      if (!oldData) return oldData;
+      return updater(oldData);
+    });
+  }
+
   /**
    * Remove item from cache
    *
