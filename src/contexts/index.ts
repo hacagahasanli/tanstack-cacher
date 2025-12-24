@@ -1,2 +1,3 @@
-export { NotificationContext } from './NotificationContext';
-export type { NotificationContextType } from './Context.types';
+export { CacheContext } from './CacheContext';
+
+export type { CacheContextType } from './types';

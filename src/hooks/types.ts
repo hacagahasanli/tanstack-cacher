@@ -23,7 +23,6 @@ export type CustomMutationOptions<TData, TError, TVariables> = UseMutationOption
   successMessage?: string;
   cacheActions?: CacheActions<TData>[] | CacheActions<TData>;
   notificationConfig?: NotificationOptions;
-  getErrorMessage?: (error: TError) => string;
 };
 
 export interface NotificationOptions {

@@ -40,8 +40,9 @@
   ],
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "import": "./index.js"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./package.json": "./package.json"
   },

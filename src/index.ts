@@ -1,5 +1,6 @@
 export * from './hooks';
 export * from './managers';
+export * from './providers';
 
 export type { CacheOptions } from './types/cache';
 
