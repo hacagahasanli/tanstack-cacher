@@ -17,8 +17,8 @@ export const useCustomMutation = <TData, TError, TVariables = void>(
     notify = false,
     notifyError = false,
     notifySuccess = false,
-    errorMessage = 'Operation failed!',
-    successMessage = 'Operation successfull!',
+    successMessage = 'Əməliyyat uğurla tamamlandı!',
+    errorMessage = 'Əməliyyat zamanı xəta baş verdi!',
     notificationConfig = { duration: 2 },
     ...rest
   } = options;
