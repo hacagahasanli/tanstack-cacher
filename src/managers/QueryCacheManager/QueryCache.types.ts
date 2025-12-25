@@ -39,7 +39,7 @@ export interface CacheConfig<TData, TItem> {
   /**
    * React Query client instance
    */
-  queryClient: QueryClient;
+  queryClient?: QueryClient;
 
   /**
    * Query key that identifies the cached data

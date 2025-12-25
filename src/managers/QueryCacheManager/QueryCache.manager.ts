@@ -21,7 +21,7 @@ export class QueryCacheManager<TData, TItem> {
 
       itemsPath: config.itemsPath ?? 'data.content',
 
-      queryClient: config.queryClient,
+      queryClient: config.queryClient!,
 
       isPaginated,
 
