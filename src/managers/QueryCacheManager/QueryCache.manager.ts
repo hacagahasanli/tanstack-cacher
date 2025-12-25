@@ -1,11 +1,8 @@
 import { getAtPath, setAtPath, incrementAtPath } from './QueryCache.utils';
 
-import { QueryClient } from '@tanstack/react-query';
 import { DEFAULT_PAGINATION_PATHS } from './QueryCache.consts';
 
 import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
-
-const defaultQueryClient = new QueryClient();
 
 export class QueryCacheManager<TData, TItem> {
   private config: Required<
@@ -24,7 +21,7 @@ export class QueryCacheManager<TData, TItem> {
 
       itemsPath: config.itemsPath ?? 'data.content',
 
-      queryClient: config.queryClient ?? defaultQueryClient,
+      queryClient: config.queryClient,
 
       isPaginated,
 

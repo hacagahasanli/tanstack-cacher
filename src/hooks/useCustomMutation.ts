@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { cacheManagerFactory } from '../managers';
 import { runCacheManagers } from '../managers/QueryCacheManager/QueryCache.utils';
@@ -25,6 +25,8 @@ export const useCustomMutation = <TData, TError, TVariables = void>(
 
   const cacherContext = useCacherContext();
 
+  const queryClient = useQueryClient();
+
   const shouldNotifyError = notify || notifyError;
   const shouldNotifySuccess = notify || notifySuccess;
 
@@ -37,7 +39,7 @@ export const useCustomMutation = <TData, TError, TVariables = void>(
   const runCacheActions = (data: TData) => {
     cacheActionsToRun.forEach((action) => {
       const { type, ...config } = action;
-      const manager = cacheManagerFactory.create(config);
+      const manager = cacheManagerFactory.create({ ...config, queryClient });
       runCacheManagers<TData>(type, manager, data);
     });
   };
