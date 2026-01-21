@@ -14,7 +14,7 @@ export type CacheManagerConstructor = new <TData, TItem>(
  * Allows users to configure a custom manager class that extends QueryCacheManager
  */
 class CacheManagerFactory {
-  private queryClient: QueryClient | null = null;
+  private queryClient: QueryClient | undefined = undefined;
   private managerClass: CacheManagerConstructor = QueryCacheManager;
 
   setManagerClass(managerClass: CacheManagerConstructor): void {
@@ -25,7 +25,7 @@ class CacheManagerFactory {
     this.queryClient = client;
   }
 
-  getQueryClient(): QueryClient | null {
+  getQueryClient(): QueryClient | undefined {
     return this.queryClient;
   }
 
@@ -38,6 +38,7 @@ class CacheManagerFactory {
   ): QueryCacheManager<TData, TItem> {
     return new this.managerClass<TData, TItem>({
       ...config,
+      queryClient: this.queryClient,
     });
   }
 
