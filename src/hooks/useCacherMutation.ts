@@ -1,4 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
+
+import { useMutation } from '@tanstack/react-query';
 
 import { cacheManagerFactory } from '../managers';
 import { runCacheManagers } from '../managers/QueryCacheManager/QueryCache.utils';
@@ -25,24 +27,25 @@ export const useCacherMutation = <TData, TError, TVariables = void>(
 
   const cacherContext = useCacherContext();
 
-  const queryClient = useQueryClient();
-
   const shouldNotifyError = notify || notifyError;
   const shouldNotifySuccess = notify || notifySuccess;
 
-  const cacheActionsToRun = Array.isArray(cacheActions)
-    ? cacheActions
-    : cacheActions
-      ? [cacheActions]
-      : [];
+  const cacheActionsToRun = useMemo(() => {
+    if (Array.isArray(cacheActions)) return cacheActions;
+    if (cacheActions) return [cacheActions];
+    return [];
+  }, [cacheActions]);
 
-  const runCacheActions = (data: TData) => {
-    cacheActionsToRun.forEach((action) => {
-      const { type, ...config } = action;
-      const manager = cacheManagerFactory.create({ ...config, queryClient });
-      runCacheManagers<TData>(type, manager, data);
-    });
-  };
+  const runCacheActions = useCallback(
+    (data: TData) => {
+      cacheActionsToRun.forEach((action) => {
+        const { type, ...config } = action;
+        const manager = cacheManagerFactory.create(config);
+        runCacheManagers<TData>(type, manager, data);
+      });
+    },
+    [cacheActionsToRun],
+  );
 
   return useMutation<TData, TError, TVariables>({
     ...rest,

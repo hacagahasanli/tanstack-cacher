@@ -5,12 +5,10 @@ import { DEFAULT_PAGINATION_PATHS } from './QueryCache.consts';
 import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
 
 export class QueryCacheManager<TData, TItem> {
-  private config: Required<
-    Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'itemsPath'>
-  > &
+  private config: Required<Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey'>> &
     Pick<
       CacheConfig<TData, TItem>,
-      'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated'
+      'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated' | 'itemsPath'
     >;
 
   constructor(config: CacheConfig<TData, TItem>) {
@@ -19,7 +17,7 @@ export class QueryCacheManager<TData, TItem> {
     this.config = {
       ...config,
 
-      itemsPath: config.itemsPath ?? 'data.content',
+      itemsPath: config.itemsPath,
 
       queryClient: config.queryClient!,
 
@@ -57,6 +55,7 @@ export class QueryCacheManager<TData, TItem> {
    */
   private setItems(data: TData | null | undefined, items: TItem[]): TData {
     if (!data) {
+      console.log('salam setitems !data icinde');
       if (this.config.initialData) {
         data = this.config.initialData;
       } else {
@@ -68,6 +67,8 @@ export class QueryCacheManager<TData, TItem> {
     }
 
     if (!this.config.itemsPath) {
+      console.log('salam setitems !itemspatch icinde');
+
       return items as any;
     }
 
