@@ -55,7 +55,6 @@ export class QueryCacheManager<TData, TItem> {
    */
   private setItems(data: TData | null | undefined, items: TItem[]): TData {
     if (!data) {
-      console.log('salam setitems !data icinde');
       if (this.config.initialData) {
         data = this.config.initialData;
       } else {
@@ -67,8 +66,6 @@ export class QueryCacheManager<TData, TItem> {
     }
 
     if (!this.config.itemsPath) {
-      console.log('salam setitems !itemspatch icinde');
-
       return items as any;
     }
 
