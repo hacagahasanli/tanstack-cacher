@@ -3,14 +3,15 @@
   "version": "1.6.2",
   "description": "A lightweight cache management utility for TanStack Query that simplifies adding, updating, deleting, and synchronizing cached data",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hacagahasanli/tanstack-cacher"
-  },
+  "type": "module",
   "author": {
     "name": "Hasanli Hajagha",
     "email": "hacagahasanli@gmail.com",
     "url": "https://github.com/hacagahasanli"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hacagahasanli/tanstack-cacher"
   },
   "maintainers": [
     {
@@ -33,36 +34,33 @@
     "cache-manager",
     "optimistic-updates"
   ],
-  "main": "./index.js",
-  "module": "./index.js",
-  "types": "./index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
   "files": [
-    "index.js",
-    "index.d.ts",
+    "dist",
     "styles",
     "LICENSE",
     "README.md"
   ],
-  "exports": {
-    ".": {
-      "import": "./index.js",
-      "types": "./index.d.ts"
-    },
-    "./package.json": "./package.json"
-  },
   "engines": {
     "node": ">=16"
   },
   "scripts": {
+    "build": "tsup",
     "dev": "tsup --watch",
     "locale-build": "tsup",
     "type-check": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
     "lint": "eslint src --ext .ts,.tsx",
-    "build": "tsup && npm run copy-dist",
-    "test": "echo \"No tests yet\" && exit 0",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "copy-dist": "cp dist/index.js index.js && cp dist/index.d.ts index.d.ts"
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
