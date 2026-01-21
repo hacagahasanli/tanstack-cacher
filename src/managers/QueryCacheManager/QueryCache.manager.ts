@@ -259,6 +259,42 @@ export class QueryCacheManager<TData, TItem> {
     }
   }
 
+  updateArrayAtPath<TItem = any>(
+    path: string,
+    updater: TItem | TItem[] | ((items: TItem[]) => TItem[]),
+    options?: { position?: InsertPosition },
+  ): void {
+    try {
+      this.config.queryClient.setQueryData<TData>(this.config.queryKey, (oldData) => {
+        if (!oldData) return oldData;
+        if (!updater) {
+          this.invalidate();
+          return oldData;
+        }
+
+        const current = getAtPath<TItem[]>(oldData, path, []);
+        const safeCurrent = Array.isArray(current) ? current : [];
+
+        let updatedItems: TItem[];
+
+        if (typeof updater === 'function') {
+          updatedItems = (updater as (items: TItem[]) => TItem[])(safeCurrent);
+        } else if (Array.isArray(updater)) {
+          updatedItems = updater;
+        } else {
+          const position = options?.position ?? 'start';
+          updatedItems =
+            position === 'start' ? [updater, ...safeCurrent] : [...safeCurrent, updater];
+        }
+
+        return setAtPath<TData>(oldData, path, updatedItems);
+      });
+    } catch (error) {
+      console.error('[QueryCacheManager] updateArrayAtPath failed:', error);
+      this.invalidate();
+    }
+  }
+
   /**
    * Replace full data
    *
