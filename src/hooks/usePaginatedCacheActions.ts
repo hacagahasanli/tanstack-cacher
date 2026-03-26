@@ -45,7 +45,7 @@ const usePaginatedCacheActions = <TData, TItem extends { id: string | number }>(
       const totalElements = getAtPath<number>(old, totalElementsPath, 0);
       const pageSize = getAtPath<number>(old, pageSizePath, 10);
       const newTotal = totalElements + 1;
-      const newItems = [item, ...items];
+      const newItems = [item, ...items].slice(0, pageSize);
 
       let result = { ...old };
 
@@ -87,16 +87,20 @@ const usePaginatedCacheActions = <TData, TItem extends { id: string | number }>(
       if (index === -1) return old;
 
       const newItems = items.filter((i) => i.id !== id);
-      const currentPage = getAtPath<number>(old, currentPagePath, 1);
+      const currentPage = getAtPath<number>(old, currentPagePath, defaultPage);
       const totalElements = getAtPath<number>(old, totalElementsPath, 0);
       const pageSize = getAtPath<number>(old, pageSizePath, 10);
       const totalPages = getAtPath<number>(old, totalPagesPath, 1);
       const newTotal = Math.max(0, totalElements - 1);
       const newTotalPages = Math.ceil(newTotal / pageSize);
 
-      if (newItems.length === 0 && currentPage > 1) {
+      if (newItems.length === 0 && currentPage > defaultPage) {
         onNavigateToPage?.(currentPage - 1);
-      } else if (newItems.length > 0 && newItems.length <= refetchThreshold && totalPages > currentPage) {
+      } else if (
+        newItems.length > 0 &&
+        newItems.length <= refetchThreshold &&
+        totalPages > currentPage
+      ) {
         shouldRefetch = true;
       }
 
