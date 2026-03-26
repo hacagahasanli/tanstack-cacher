@@ -27,6 +27,12 @@ export interface PaginationConfig {
    * @example "page.size" | "meta.pageSize" | "limit"
    */
   pageSizePath?: string;
+
+  /**
+   * Path to number of elements on current page
+   * @example "numberOfElements" | "page.numberOfElements"
+   */
+  numberOfElementsPath?: string;
 }
 
 /**
@@ -103,3 +109,11 @@ export interface CacheHandlers<TItem> {
  * Position where a new item should be added
  */
 export type InsertPosition = 'start' | 'end';
+
+/**
+ * Resolved (required) config returned by QueryCacheManager.getConfig()
+ */
+export type ResolvedCacheConfig<TData, TItem> = Required<
+  Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'itemsPath'>
+> &
+  Pick<CacheConfig<TData, TItem>, 'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated'>;

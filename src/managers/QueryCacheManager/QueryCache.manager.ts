@@ -2,7 +2,7 @@ import { getAtPath, setAtPath, incrementAtPath } from './QueryCache.utils';
 
 import { DEFAULT_PAGINATION_PATHS } from './QueryCache.consts';
 
-import type { CacheConfig, CacheHandlers, InsertPosition } from './QueryCache.types';
+import type { CacheConfig, CacheHandlers, InsertPosition, ResolvedCacheConfig } from './QueryCache.types';
 
 export class QueryCacheManager<TData, TItem> {
   private config: Required<
@@ -405,7 +405,7 @@ export class QueryCacheManager<TData, TItem> {
     this.config.queryClient.removeQueries({ queryKey: [queryKey] });
   }
 
-  getConfig(): typeof this.config {
+  getConfig(): ResolvedCacheConfig<TData, TItem> {
     return this.config;
   }
 

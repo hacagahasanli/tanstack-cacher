@@ -7,6 +7,7 @@ export type {
   CacheHandlers,
   InsertPosition,
   PaginationConfig,
+  ResolvedCacheConfig,
 } from './QueryCache.types';
 
 export { QueryCacheManager, DEFAULT_PAGINATION_PATHS };
