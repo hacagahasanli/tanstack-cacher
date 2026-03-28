@@ -5,12 +5,10 @@ import { DEFAULT_PAGINATION_PATHS } from './QueryCache.consts';
 import type { CacheConfig, CacheHandlers, InsertPosition, ResolvedCacheConfig } from './QueryCache.types';
 
 export class QueryCacheManager<TData, TItem> {
-  private config: Required<
-    Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'itemsPath'>
-  > &
+  private config: Required<Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey'>> &
     Pick<
       CacheConfig<TData, TItem>,
-      'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated'
+      'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated' | 'itemsPath'
     >;
 
   constructor(config: CacheConfig<TData, TItem>) {
@@ -19,7 +17,7 @@ export class QueryCacheManager<TData, TItem> {
     this.config = {
       ...config,
 
-      itemsPath: config.itemsPath ?? 'data.content',
+      itemsPath: config.itemsPath,
 
       queryClient: config.queryClient!,
 
