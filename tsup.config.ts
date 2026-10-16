@@ -8,8 +8,8 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   external: ['react', 'react-dom', '@tanstack/react-query'],
-  treeshake: true,
   target: 'es2020',
+  banner: { js: "'use client';" },
   outExtension({ format }) {
     return {
       js: format === 'esm' ? '.mjs' : '.cjs',
