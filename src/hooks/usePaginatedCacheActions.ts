@@ -22,7 +22,7 @@ const usePaginatedCacheActions = <TData, TItem extends { id: string | number }>(
   onRefetch,
 }: UsePaginatedCacheActionsConfig<TData, TItem>) => {
   const config = cacher.getConfig();
-  const { queryClient, queryKey, itemsPath, pagination } = config;
+  const { queryClient, queryKey, itemsPath = 'data.content', pagination } = config;
 
   const currentPagePath = pagination?.currentPagePath ?? 'page';
   const pageSizePath = pagination?.pageSizePath ?? 'size';

@@ -114,6 +114,6 @@ export type InsertPosition = 'start' | 'end';
  * Resolved (required) config returned by QueryCacheManager.getConfig()
  */
 export type ResolvedCacheConfig<TData, TItem> = Required<
-  Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey' | 'itemsPath'>
+  Pick<CacheConfig<TData, TItem>, 'queryClient' | 'queryKey'>
 > &
-  Pick<CacheConfig<TData, TItem>, 'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated'>;
+  Pick<CacheConfig<TData, TItem>, 'itemsPath' | 'keyExtractor' | 'pagination' | 'initialData' | 'isPaginated'>;
