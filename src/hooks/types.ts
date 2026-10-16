@@ -11,11 +11,12 @@ export interface CacheActions<TData, TItem = unknown> extends Omit<
   type: MutationTypes;
 }
 
-export type CustomMutationOptions<TData, TError, TVariables> = UseMutationOptions<
+export type CustomMutationOptions<
   TData,
   TError,
-  TVariables
-> & {
+  TVariables,
+  TContext = unknown,
+> = UseMutationOptions<TData, TError, TVariables, TContext> & {
   notify?: boolean;
   notifyError?: boolean;
   errorMessage?: string;
@@ -25,7 +26,9 @@ export type CustomMutationOptions<TData, TError, TVariables> = UseMutationOption
   notificationConfig?: NotificationOptions;
 };
 
+export type NotificationType = 'success' | 'error';
+
 export interface NotificationOptions {
   duration?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }

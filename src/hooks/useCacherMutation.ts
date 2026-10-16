@@ -1,16 +1,28 @@
-import { useCallback, useMemo } from 'react';
-
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { cacheManagerFactory } from '../managers';
 import { runCacheManagers } from '../managers/QueryCacheManager/QueryCache.utils';
 
 import { useCacherContext } from './useCacherContext';
 
-import type { CustomMutationOptions } from './types';
+import type { CustomMutationOptions, NotificationType } from './types';
 
-export const useCacherMutation = <TData, TError, TVariables = void>(
-  options: CustomMutationOptions<TData, TError, TVariables>,
+const getApiErrorMessage = (apiError: unknown): string | undefined => {
+  if (typeof apiError !== 'object' || apiError === null || !('error' in apiError)) {
+    return undefined;
+  }
+
+  const { error } = apiError;
+
+  if (typeof error !== 'object' || error === null || !('message' in error)) {
+    return undefined;
+  }
+
+  return typeof error.message === 'string' ? error.message : undefined;
+};
+
+export const useCacherMutation = <TData, TError, TVariables = void, TContext = unknown>(
+  options: CustomMutationOptions<TData, TError, TVariables, TContext>,
 ) => {
   const {
     onError,
@@ -27,49 +39,60 @@ export const useCacherMutation = <TData, TError, TVariables = void>(
 
   const cacherContext = useCacherContext();
 
+  const queryClient = useQueryClient();
+
   const shouldNotifyError = notify || notifyError;
   const shouldNotifySuccess = notify || notifySuccess;
 
-  const cacheActionsToRun = useMemo(() => {
-    if (Array.isArray(cacheActions)) return cacheActions;
-    if (cacheActions) return [cacheActions];
-    return [];
-  }, [cacheActions]);
+  const cacheActionsToRun = Array.isArray(cacheActions)
+    ? cacheActions
+    : cacheActions
+      ? [cacheActions]
+      : [];
 
-  const runCacheActions = useCallback(
-    (data: TData) => {
-      cacheActionsToRun.forEach((action) => {
-        const { type, ...config } = action;
-        const manager = cacheManagerFactory.create(config);
-        runCacheManagers<TData>(type, manager, data);
-      });
-    },
-    [cacheActionsToRun],
-  );
+  const showNotification = (type: NotificationType, message: string) => {
+    if (cacherContext?.notify) {
+      cacherContext.notify(message, { ...notificationConfig, type });
+      return;
+    }
 
-  return useMutation<TData, TError, TVariables>({
+    const legacyNotify = type === 'success' ? cacherContext?.showSuccess : cacherContext?.showError;
+    legacyNotify?.(message, notificationConfig);
+  };
+
+  const runCacheActions = (data: TData) => {
+    cacheActionsToRun.forEach((action) => {
+      const { type, ...config } = action;
+      const manager = cacheManagerFactory.create({ ...config, queryClient });
+      runCacheManagers<TData>(type, manager, data);
+    });
+  };
+
+  return useMutation<TData, TError, TVariables, TContext>({
     ...rest,
 
-    onSuccess: (data, variables, meta, context) => {
+    onSuccess: (...args) => {
+      const [data] = args;
+
       if (shouldNotifySuccess) {
-        cacherContext?.showSuccess?.(successMessage, notificationConfig);
+        showNotification('success', successMessage);
       }
 
-      onSuccess?.(data, variables, meta, context);
+      onSuccess?.(...args);
       runCacheActions(data);
     },
 
-    onError: (apiError, variables, meta, context) => {
+    onError: (...args) => {
+      const [apiError] = args;
+
       const message =
-        cacherContext?.getErrorMessage?.(apiError) ??
-        (apiError as any)?.error?.message ??
-        errorMessage;
+        cacherContext?.getErrorMessage?.(apiError) ?? getApiErrorMessage(apiError) ?? errorMessage;
 
       if (shouldNotifyError) {
-        cacherContext?.showError?.(message, notificationConfig);
+        showNotification('error', message);
       }
 
-      onError?.(apiError, variables, meta, context);
+      onError?.(...args);
     },
   });
 };

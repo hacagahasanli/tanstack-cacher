@@ -3,6 +3,7 @@ export * from './managers';
 export * from './providers';
 
 export type { CacheOptions } from './types/cache';
+export type { CacheContextType } from './contexts';
 
 export { resetCacheManager, resetAllCacheManagers } from './utils/cacheRegistry';
 

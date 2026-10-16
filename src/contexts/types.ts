@@ -1,7 +1,10 @@
-import { NotificationOptions } from '../hooks/types';
+import type { NotificationOptions, NotificationType } from '../hooks/types';
 
 export interface CacheContextType {
-  showError: (message: string, options?: NotificationOptions) => void;
-  showSuccess: (message: string, options?: NotificationOptions) => void;
-  getErrorMessage: (error: any) => void;
+  notify?(message: string, options: NotificationOptions & { type: NotificationType }): void;
+  getErrorMessage?(error: unknown): string | undefined;
+  /** @deprecated Use `notify` instead */
+  showError?(message: string, options?: NotificationOptions): void;
+  /** @deprecated Use `notify` instead */
+  showSuccess?(message: string, options?: NotificationOptions): void;
 }

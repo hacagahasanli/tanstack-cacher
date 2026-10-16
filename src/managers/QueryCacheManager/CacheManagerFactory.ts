@@ -38,7 +38,7 @@ class CacheManagerFactory {
   ): QueryCacheManager<TData, TItem> {
     return new this.managerClass<TData, TItem>({
       ...config,
-      queryClient: this.queryClient,
+      queryClient: config.queryClient ?? this.queryClient,
     });
   }
 

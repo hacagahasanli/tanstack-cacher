@@ -12,6 +12,12 @@ export class QueryCacheManager<TData, TItem> {
     >;
 
   constructor(config: CacheConfig<TData, TItem>) {
+    if (!config.queryClient) {
+      throw new Error(
+        'QueryCacheManager: queryClient is missing. Pass it explicitly or wrap the app with <CacheProvider />.',
+      );
+    }
+
     const isPaginated = Boolean(config.pagination);
 
     this.config = {
@@ -19,7 +25,7 @@ export class QueryCacheManager<TData, TItem> {
 
       itemsPath: config.itemsPath,
 
-      queryClient: config.queryClient!,
+      queryClient: config.queryClient,
 
       isPaginated,
 
