@@ -10,12 +10,7 @@ import { cacheManagerFactory } from '../../managers';
 
 interface CacheProviderProps {
   children: ReactNode;
-  /** Notification handlers used by `useCacherMutation` (`isNotify`, `isNotifySuccess`, `isNotifyError`). */
   config?: CacheContextType;
-  /**
-   * Optional QueryClient. When passed, CacheProvider also renders `<QueryClientProvider />`,
-   * so a single provider is enough.
-   */
   queryClient?: QueryClient;
 }
 

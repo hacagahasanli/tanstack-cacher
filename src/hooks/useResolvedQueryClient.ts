@@ -3,11 +3,7 @@ import { QueryClientContext, type QueryClient } from '@tanstack/react-query';
 
 import { cacheManagerFactory } from '../managers';
 
-/**
- * Resolves a QueryClient without throwing TanStack's "No QueryClient set" error.
- *
- * Priority: explicit argument → nearest QueryClientProvider → client registered by <CacheProvider />.
- */
+
 export const useResolvedQueryClient = (queryClient?: QueryClient): QueryClient => {
   const contextClient = useContext(QueryClientContext);
 
