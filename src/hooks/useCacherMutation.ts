@@ -1,34 +1,56 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useContext, useState } from 'react';
+import {
+  useMutation,
+  type QueryClient,
+  type UseMutationResult,
+} from '@tanstack/react-query';
 
+import { CacheContext } from '../contexts';
+import { toPercent } from '../utils/progress';
 import { cacheManagerFactory } from '../managers';
 import { runCacheManagers } from '../managers/QueryCacheManager/QueryCache.utils';
 
-import { useCacherContext } from './useCacherContext';
+import { useResolvedQueryClient } from './useResolvedQueryClient';
 
-import type { CustomMutationOptions } from './types';
+import type { ProgressInput } from '../types/mutation';
+import type {
+  CacherMutationHook,
+  CacherMutationResult,
+  CustomMutationOptions,
+  CacherMutationFnContext,
+} from './types';
 
-export const useCacherMutation = <TData, TError, TVariables = void>(
-  options: CustomMutationOptions<TData, TError, TVariables>,
-) => {
+function useCacherMutationImpl<
+  TData = unknown,
+  TError = Error,
+  TVariables = void,
+  TOnMutateResult = unknown,
+>(
+  options: CustomMutationOptions<TData, TError, TVariables, TOnMutateResult>,
+  queryClientOverride?: QueryClient,
+): UseMutationResult<TData, TError, TVariables, TOnMutateResult> {
   const {
     onError,
     onSuccess,
+    mutationFn,
     cacheActions,
-    notify = false,
-    notifyError = false,
-    notifySuccess = false,
+    isNotify = false,
+    isNotifyError = false,
+    isNotifySuccess = false,
+    isWithProgressTrack = false,
+    notificationConfig = { duration: 1.5 },
     successMessage = 'Əməliyyat uğurla tamamlandı!',
     errorMessage = 'Əməliyyat zamanı xəta baş verdi!',
-    notificationConfig = { duration: 2 },
     ...rest
   } = options;
 
-  const cacherContext = useCacherContext();
+  const cacherContext = useContext(CacheContext);
+  const queryClient = useResolvedQueryClient(queryClientOverride);
 
-  const queryClient = useQueryClient();
+  const [progress, setProgress] = useState(0);
 
-  const shouldNotifyError = notify || notifyError;
-  const shouldNotifySuccess = notify || notifySuccess;
+  const shouldNotifyError = isNotify || isNotifyError;
+  const shouldNotifySuccess = isNotify || isNotifySuccess;
 
   const cacheActionsToRun = Array.isArray(cacheActions)
     ? cacheActions
@@ -36,37 +58,83 @@ export const useCacherMutation = <TData, TError, TVariables = void>(
       ? [cacheActions]
       : [];
 
-  const runCacheActions = (data: TData) => {
-    cacheActionsToRun.forEach((action) => {
-      const { type, ...config } = action;
+  const runCacheActions = (data: TData, variables: TVariables) => {
+    cacheActionsToRun.forEach(({ type, getItem, ...config }) => {
       const manager = cacheManagerFactory.create({ ...config, queryClient });
-      runCacheManagers<TData>(type, manager, data);
+      const item = getItem ? getItem(data, variables) : data;
+      runCacheManagers(type, manager, item);
     });
   };
 
-  return useMutation<TData, TError, TVariables>({
-    ...rest,
+  const mutation = useMutation<TData, TError, TVariables, TOnMutateResult>(
+    {
+      ...rest,
 
-    onSuccess: (data, variables, meta, context) => {
-      if (shouldNotifySuccess) {
-        cacherContext?.showSuccess?.(successMessage, notificationConfig);
-      }
+      ...(mutationFn && {
+        mutationFn: (variables: TVariables, ...args: unknown[]) => {
+          const context = args[0] as CacherMutationFnContext<
+            TData,
+            TError,
+            TVariables,
+            TOnMutateResult
+          >;
 
-      onSuccess?.(data, variables, meta, context);
-      runCacheActions(data);
+          if (!isWithProgressTrack) return mutationFn(variables, context);
+
+          setProgress(0);
+
+          const onProgress = (value: ProgressInput) => setProgress(toPercent(value));
+
+          return mutationFn(variables, { ...context, onProgress }).then((data) => {
+            setProgress(100);
+            return data;
+          });
+        },
+      }),
+
+      onSuccess: (...args) => {
+        const [data, variables] = args;
+
+        if (shouldNotifySuccess) {
+          cacherContext?.showSuccess?.(successMessage, notificationConfig);
+        }
+
+        runCacheActions(data, variables);
+
+        return onSuccess?.(...args);
+      },
+
+      onError: (...args) => {
+        const [apiError] = args;
+
+        const message =
+          cacherContext?.getErrorMessage?.(apiError) ??
+          (apiError as any)?.error?.message ??
+          (apiError as any)?.message ??
+          errorMessage;
+
+        if (shouldNotifyError) {
+          cacherContext?.showError?.(message, notificationConfig);
+        }
+
+        return onError?.(...args);
+      },
     },
+    queryClient,
+  );
 
-    onError: (apiError, variables, meta, context) => {
-      const message =
-        cacherContext?.getErrorMessage?.(apiError) ??
-        (apiError as any)?.error?.message ??
-        errorMessage;
+  if (!isWithProgressTrack) return mutation;
 
-      if (shouldNotifyError) {
-        cacherContext?.showError?.(message, notificationConfig);
-      }
+  const resetWithProgress = () => {
+    setProgress(0);
+    mutation.reset();
+  };
 
-      onError?.(apiError, variables, meta, context);
-    },
-  });
-};
+  return {
+    ...mutation,
+    progress,
+    reset: resetWithProgress,
+  } as CacherMutationResult<TData, TError, TVariables, TOnMutateResult>;
+}
+
+export const useCacherMutation = useCacherMutationImpl as CacherMutationHook;

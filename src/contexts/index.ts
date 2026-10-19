@@ -1,3 +1,3 @@
 export { CacheContext } from './CacheContext';
 
-export type { CacheContextType } from './types';
+export type { CacheContextType } from '../types/context';
