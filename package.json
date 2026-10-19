@@ -38,19 +38,27 @@
     "typescript"
   ],
   "main": "./index.js",
-  "module": "./index.js",
+  "module": "./index.mjs",
   "types": "./index.d.ts",
   "files": [
     "index.js",
+    "index.mjs",
     "index.d.ts",
+    "index.d.mts",
     "styles",
     "LICENSE",
     "README.md"
   ],
   "exports": {
     ".": {
-      "import": "./index.js",
-      "types": "./index.d.ts"
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      }
     },
     "./package.json": "./package.json"
   },
@@ -66,7 +74,7 @@
     "build": "tsup && npm run copy-dist",
     "test": "echo \"No tests yet\" && exit 0",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "copy-dist": "cp dist/index.js index.js && cp dist/index.d.ts index.d.ts"
+    "copy-dist": "cp dist/index.js dist/index.mjs dist/index.d.ts dist/index.d.mts ."
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

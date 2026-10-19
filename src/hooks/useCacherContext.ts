@@ -7,8 +7,8 @@ export const useCacherContext = (): CacheContextType => {
 
   if (!context) {
     console.warn(
-      'useCacherContext was called outside of <NotificationProvider />. ' +
-        'Wrap your app with <NotificationProvider /> to enable notifications.',
+      'useCacherContext was called outside of <CacheProvider />. ' +
+        'Wrap your app with <CacheProvider /> to enable notifications.',
     );
   }
 

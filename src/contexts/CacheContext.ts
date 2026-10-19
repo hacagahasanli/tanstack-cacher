@@ -1,5 +1,5 @@
 import { createContext } from 'react';
 
-import { CacheContextType } from './types';
+import type { CacheContextType } from '../types/context';
 
 export const CacheContext = createContext<CacheContextType | undefined>(undefined);

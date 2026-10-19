@@ -173,7 +173,7 @@ Want mutation + cache + toast in a single hook? That's [`useCacherMutation`](#us
 ```tsx
 const { mutate: createUser } = useCacherMutation({
   mutationFn: api.createUser,
-  notify: true,
+  isNotify: true,
   cacheActions: {
     type: 'add',
     queryKey: ['users'],
@@ -477,7 +477,7 @@ const useCreateUser = () =>
     mutationFn: (dto) => api.createUser(dto),
 
     // notifications
-    notify: true,
+    isNotify: true,
     successMessage: 'User created',
     errorMessage: 'Could not create user',
 
@@ -502,18 +502,21 @@ Accepts **every** `useMutation` option (`mutationFn`, `mutationKey`, `retry`, `o
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `cacheActions` | `CacheAction \| CacheAction[]` | – | Cache operations to run on success |
-| `notify` | `boolean` | `false` | Shortcut for success **and** error notifications |
-| `notifySuccess` | `boolean` | `false` | Notify only on success |
-| `notifyError` | `boolean` | `false` | Notify only on error |
+| `isNotify` | `boolean` | `false` | Shortcut for success **and** error notifications |
+| `isNotifySuccess` | `boolean` | `false` | Notify only on success |
+| `isNotifyError` | `boolean` | `false` | Notify only on error |
 | `successMessage` | `string` | `'Əməliyyat uğurla tamamlandı!'` | Success text |
 | `errorMessage` | `string` | `'Əməliyyat zamanı xəta baş verdi!'` | Fallback error text |
-| `notificationConfig` | `{ duration?: number; [k: string]: any }` | `{ duration: 2 }` | Passed straight to your notifier |
+| `notificationConfig` | `{ duration?: number; [k: string]: unknown }` | `{ duration: 1.5 }` | Passed straight to your notifier |
+| `isWithProgressTrack` | `boolean` | `false` | Pass `onProgress` to `mutationFn` and return `progress` (0–100) — see [progress](#upload--download-progress) |
+
+The hook takes an optional second argument — a `QueryClient` to use instead of the one from context: `useCacherMutation(options, queryClient)`. Without it the client is resolved from `QueryClientProvider`, then from [`CacheProvider`](#cacheprovider--usecachercontext--global-notifications).
 
 > The built-in default messages are Azerbaijani. Pass your own strings (or i18n `t(...)` values) in any app that isn't.
 
 ### `cacheActions`
 
-A cache action is a [`CacheConfig`](#cacheconfigtdata-titem) (without `queryClient`) plus a `type`:
+A cache action is a [`CacheConfig`](#cacheconfigtdata-titem) (without `queryClient`) plus a `type` and an optional `getItem(data, variables)` that picks what gets written (defaults to the mutation response):
 
 | `type` | Runs | Uses the mutation response as… |
 | --- | --- | --- |
@@ -522,10 +525,19 @@ A cache action is a [`CacheConfig`](#cacheconfigtdata-titem) (without `queryClie
 | `'remove'` | `manager.delete(data)` | the item to delete |
 | `'invalidate'` | `manager.invalidate()` | ignored |
 
-**Whatever your `mutationFn` resolves to is what gets written into the cache.** If your API replies `{ data: user }` instead of `user`, unwrap it in `mutationFn`:
+**Whatever your `mutationFn` resolves to is what gets written into the cache** — unless you pass `getItem`. If your API replies `{ data: user }` instead of `user`, unwrap it in `mutationFn`:
 
 ```ts
 mutationFn: (dto) => api.createUser(dto).then((res) => res.data),
+```
+
+`DELETE` endpoints usually return nothing — take the id from the variables instead:
+
+```ts
+useCacherMutation({
+  mutationFn: (id: number) => api.deleteTodo(id),
+  cacheActions: { type: 'remove', queryKey: ['todos'], itemsPath: 'data', getItem: (_data, id) => id },
+});
 ```
 
 Several actions in one mutation — update one list, invalidate the rest:
@@ -533,7 +545,7 @@ Several actions in one mutation — update one list, invalidate the rest:
 ```tsx
 useCacherMutation({
   mutationFn: api.deleteUser,
-  notify: true,
+  isNotify: true,
   cacheActions: [
     { type: 'remove', queryKey: ['users'], itemsPath: 'data.content', pagination: {} },
     { type: 'invalidate', queryKey: ['users-stats'] },
@@ -544,16 +556,78 @@ useCacherMutation({
 
 ### Execution order
 
-- **Success:** success notification → your `onSuccess` → cache actions.
+- **Success:** success notification → cache actions → your `onSuccess` (its return value is passed through, so a returned promise is awaited by React Query).
 - **Error:** message resolved as `getErrorMessage(error)` → `error.error.message` → `errorMessage`, then the error notification → your `onError`.
 
-Notifications are optional — without a [`CacheProvider`](#cacheprovider--usecachercontext--global-notifications) nothing is shown and nothing breaks (a console warning is logged).
+Notifications are optional — without a [`CacheProvider`](#cacheprovider--usecachercontext--global-notifications) nothing is shown and nothing breaks.
+
+### Upload / download progress
+
+Pass `isWithProgressTrack: true` and `mutationFn` receives `onProgress` in its second argument. It accepts a number (0–100) or any progress event with `loaded` / `total` (axios `onUploadProgress` / `onDownloadProgress`, XHR `ProgressEvent`).
+The hook then also returns `progress` (0–100), which resets on every new call and on `reset()`.
+Without `isWithProgressTrack` the hook returns the plain `useMutation` result.
+
+```tsx
+const upload = useCacherMutation({
+  isWithProgressTrack: true,
+  mutationFn: (file: File, { onProgress }) => {
+    const form = new FormData();
+    form.append('file', file);
+    return axios.post('/files', form, { onUploadProgress: onProgress }).then((r) => r.data);
+  },
+});
+
+upload.mutate(file);
+
+<progress value={upload.progress} max={100} />;
+```
+
+With [servios](https://www.npmjs.com/package/servios), pass it to the request's `onProgress`:
+
+```tsx
+const upload = useCacherMutation({
+  isWithProgressTrack: true,
+  mutationFn: (file: File, { onProgress }) => FilesService.upload(file, onProgress),
+});
+
+// FilesService
+upload(file: File, onProgress?: (percent: number) => void) {
+  return this.post({ endpoint: '/files', data: toFormData(file), onProgress });
+}
+```
 
 ---
 
 ## `CacheProvider` & `useCacherContext` — global notifications
 
 Wire your toast library in **once**; every `useCacherMutation` in the tree uses it.
+
+### Setup (React / Next.js App Router)
+
+One provider is enough — pass `queryClient` and `CacheProvider` renders `QueryClientProvider` for you.
+In Next.js put it in a client component (`'use client'`) and use it from `app/layout.tsx`.
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { QueryClient, CacheProvider } from 'tanstack-cacher';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <CacheProvider
+      queryClient={queryClient}
+      config={{ showSuccess, showError, getErrorMessage }} // optional
+    >
+      {children}
+    </CacheProvider>
+  );
+}
+```
+
+An existing `<QueryClientProvider>` also works — just put `CacheProvider` anywhere inside it:
 
 ```tsx
 import { CacheProvider } from 'tanstack-cacher';
@@ -581,9 +655,14 @@ const Providers = ({ children }) => {
 | --- | --- | --- |
 | `showSuccess` | `(message: string, options?: NotificationOptions) => void` | Success toast |
 | `showError` | `(message: string, options?: NotificationOptions) => void` | Error toast |
-| `getErrorMessage` | `(error: any) => string \| undefined` | Pull a human message out of an API error; return `undefined` to fall back to `errorMessage` |
+| `getErrorMessage` | `(error: unknown) => string \| undefined` | Pull a human message out of an API error; return `undefined` to fall back to `errorMessage` |
 
-`CacheProvider` must sit **inside** `QueryClientProvider` — it reads the query client and hands it to [`cacheManagerFactory`](#cachemanagerfactory--plug-in-your-own-manager).
+| Prop | Required | Purpose |
+| --- | --- | --- |
+| `config` | no | The notifiers above |
+| `queryClient` | no | When given, `CacheProvider` renders `QueryClientProvider` itself; otherwise it uses the client from the surrounding `QueryClientProvider` |
+
+Either way the resolved client is handed to [`cacheManagerFactory`](#cachemanagerfactory--plug-in-your-own-manager).
 
 As an HOC, if that fits your app better:
 
@@ -997,7 +1076,7 @@ Both wrap their argument as `[key]`, so call them with a single string segment (
 Those are the built-in fallbacks for `successMessage` / `errorMessage`. Pass your own strings or i18n values to `useCacherMutation`.
 
 **Do I need `CacheProvider`?**
-Only for notifications. Cache updates work without it; `useCacherContext` logs a warning and notifications are skipped.
+Only for notifications — or as a one-stop provider when you pass it `queryClient`. Cache updates work without it; notifications are simply skipped.
 
 **Can a failed write corrupt my cache?**
 `add`, `update`, `delete`, `replace`, `clear` and `updateArrayAtPath` all run inside `try/catch`. Errors are logged with a `[QueryCacheManager]` prefix and the query is invalidated, so the next render gets fresh server data.
@@ -1029,6 +1108,7 @@ import {
   useCacherContext,
   useQueryCacheManagers,
   usePaginatedCacheActions,
+  useResolvedQueryClient,
 
   // core
   QueryCacheManager,
@@ -1049,6 +1129,12 @@ import type {
   PaginationConfig,
   InsertPosition,
   CustomMutationOptions,
+  CacheActions,
+  CacherMutationResult,
+  CacherMutationHook,
+  CacherMutationFnContext,
+  ProgressInput,
+  ProgressHandler,
   CacheManagerConstructor,
   UsePaginatedCacheActionsConfig,
 } from 'tanstack-cacher';
@@ -1061,6 +1147,7 @@ import type {
 | `useCacherMutation` | hook | [link](#usecachermutation--mutate--cache--notify) |
 | `usePaginatedCacheActions` | hook | [link](#usepaginatedcacheactions--paginated-tables-done-right) |
 | `useCacherContext` | hook | [link](#cacheprovider--usecachercontext--global-notifications) |
+| `useResolvedQueryClient` | hook | Returns the `QueryClient` (argument → `QueryClientProvider` → `CacheProvider`) or throws |
 | `CacheProvider` | component | [link](#cacheprovider--usecachercontext--global-notifications) |
 | `cacheManagerFactory` | singleton | [link](#cachemanagerfactory--plug-in-your-own-manager) |
 | `resetCacheManager`, `resetAllCacheManagers` | functions | [link](#registry-helpers) |
