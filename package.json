@@ -1,6 +1,6 @@
 {
   "name": "tanstack-cacher",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "description": "A lightweight cache management utility for TanStack Query that simplifies adding, updating, deleting, and synchronizing cached data",
   "license": "MIT",
   "repository": {
@@ -8,13 +8,13 @@
     "url": "https://github.com/hacagahasanli/tanstack-cacher"
   },
   "author": {
-    "name": "Hasanli Hajagha",
+    "name": "Hasanli Hacaga",
     "email": "hacagahasanli@gmail.com",
     "url": "https://github.com/hacagahasanli"
   },
   "maintainers": [
     {
-      "name": "Hasanli Hajagha",
+      "name": "Hasanli Hacaga",
       "email": "hacagahasanli@gmail.com",
       "web": "http://github.com/hacagahasanli"
     },
@@ -31,7 +31,11 @@
     "tanstack-query",
     "cache",
     "cache-manager",
-    "optimistic-updates"
+    "optimistic-updates",
+    "query-cache",
+    "pagination",
+    "paginated-table",
+    "typescript"
   ],
   "main": "./index.js",
   "module": "./index.mjs",
