@@ -2,7 +2,7 @@
  * Path-based utilities for accessing and modifying nested objects
  */
 
-import { type MutationTypes } from '../../hooks/types';
+import { type MutationTypes } from '../../types/mutation';
 import { type QueryCacheManager } from './QueryCache.manager';
 
 /**

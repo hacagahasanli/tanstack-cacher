@@ -4,10 +4,9 @@ import { useQueryCacheManagers } from './useQueryCacheManagers';
 import { useResolvedQueryClient } from './useResolvedQueryClient';
 import usePaginatedCacheActions from './usePaginatedCacheActions';
 
+export type { ProgressInput, ProgressHandler } from '../types/mutation';
 export type {
   CacheActions,
-  ProgressInput,
-  ProgressHandler,
   CacherMutationHook,
   CacherMutationResult,
   CustomMutationOptions,

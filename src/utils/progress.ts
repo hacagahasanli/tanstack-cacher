@@ -1,4 +1,4 @@
-import type { ProgressInput } from '../hooks/types';
+import type { ProgressInput } from '../types/mutation';
 
 export const toPercent = (progress: ProgressInput): number => {
   const value =

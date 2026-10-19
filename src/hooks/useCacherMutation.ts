@@ -12,8 +12,8 @@ import { runCacheManagers } from '../managers/QueryCacheManager/QueryCache.utils
 
 import { useResolvedQueryClient } from './useResolvedQueryClient';
 
+import type { ProgressInput } from '../types/mutation';
 import type {
-  ProgressInput,
   CacherMutationHook,
   CacherMutationResult,
   CustomMutationOptions,

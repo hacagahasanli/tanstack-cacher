@@ -5,8 +5,8 @@ import type {
 } from '@tanstack/react-query';
 
 import { type CacheConfig } from '../managers';
-
-export type MutationTypes = 'add' | 'invalidate' | 'remove' | 'update';
+import type { MutationTypes, ProgressHandler } from '../types/mutation';
+import type { NotificationOptions } from '../types/notification';
 
 export interface CacheActions<TData, TItem = unknown, TVariables = any> extends Omit<
   CacheConfig<TData, TItem>,
@@ -23,10 +23,6 @@ export interface CacheActions<TData, TItem = unknown, TVariables = any> extends 
    */
   getItem?: (data: TData, variables: TVariables) => unknown;
 }
-
-export type ProgressInput = number | { loaded: number; total?: number };
-
-export type ProgressHandler = (progress: ProgressInput) => void;
 
 type BaseMutationOptions<TData, TError, TVariables, TOnMutateResult> = UseMutationOptions<
   TData,
@@ -108,9 +104,4 @@ export interface CacherMutationHook {
     options: CustomMutationOptions<TData, TError, TVariables, TOnMutateResult>,
     queryClient?: QueryClient,
   ): UseMutationResult<TData, TError, TVariables, TOnMutateResult>;
-}
-
-export interface NotificationOptions {
-  duration?: number;
-  [key: string]: any;
 }
