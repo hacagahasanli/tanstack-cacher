@@ -3,7 +3,6 @@ import { QueryClientContext, type QueryClient } from '@tanstack/react-query';
 
 import { cacheManagerFactory } from '../managers';
 
-
 export const useResolvedQueryClient = (queryClient?: QueryClient): QueryClient => {
   const contextClient = useContext(QueryClientContext);
 
