@@ -102,10 +102,10 @@ export function hasPath(obj: any, path: string): boolean {
   return true;
 }
 
-export const runCacheManagers = <TData>(
+export const runCacheManagers = (
   type: MutationTypes,
   manager: QueryCacheManager<unknown, unknown>,
-  data: Partial<TData>,
+  data: unknown,
 ) => {
   switch (type) {
     case 'invalidate':
@@ -118,7 +118,7 @@ export const runCacheManagers = <TData>(
       manager.add(data);
       break;
     case 'update':
-      manager.update(data);
+      manager.update(data as Partial<unknown>);
       break;
     default:
       break;

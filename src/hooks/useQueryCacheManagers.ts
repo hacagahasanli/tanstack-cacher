@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useResolvedQueryClient } from './useResolvedQueryClient';
 
 import { CacheConfig, QueryCacheManager } from '../managers';
 
@@ -27,7 +27,7 @@ export const useQueryCacheManagers = <
     options?: Partial<Omit<CacheConfig<any, any>, 'queryClient'>>;
   };
 }): T => {
-  const queryClient = useQueryClient();
+  const queryClient = useResolvedQueryClient();
 
   const managers = {} as T;
 
